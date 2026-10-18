@@ -1,0 +1,266 @@
+'use client';
+
+import { useState } from 'react';
+import { Users, Shield, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Search } from 'lucide-react';
+import AppLayout from '@/components/layout/AppLayout';
+import SeverityBadge from '@/components/ui/SeverityBadge';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { mockIAMFindings, categoryScores, type FindingStatus } from '@/lib/mock-data';
+
+const iamUsers = [
+  { name: 'jsmith', type: 'User', mfa: false, adminAccess: true, lastActivity: '2024-01-15', accessKeys: 1, keyAge: 32, status: 'ACTIVE' },
+  { name: 'maria.santos', type: 'User', mfa: true, adminAccess: false, lastActivity: '2024-01-15', accessKeys: 1, keyAge: 120, status: 'ACTIVE' },
+  { name: 'david.kim', type: 'User', mfa: true, adminAccess: false, lastActivity: '2023-10-01', accessKeys: 2, keyAge: 200, status: 'INACTIVE' },
+  { name: 'terraform-ci', type: 'Service', mfa: false, adminAccess: false, lastActivity: '2024-01-15', accessKeys: 1, keyAge: 45, status: 'ACTIVE' },
+  { name: 'devops-prod', type: 'User', mfa: true, adminAccess: false, lastActivity: '2024-01-15', accessKeys: 1, keyAge: 67, status: 'ACTIVE' },
+  { name: 'svc-cloudops', type: 'Service', mfa: false, adminAccess: false, lastActivity: '2024-01-15', accessKeys: 1, keyAge: 15, status: 'ACTIVE' },
+  { name: 'root', type: 'Root', mfa: false, adminAccess: true, lastActivity: '2024-01-14', accessKeys: 0, keyAge: 0, status: 'ACTIVE' },
+  { name: 'backdoor-svc', type: 'User', mfa: false, adminAccess: true, lastActivity: '2024-01-15', accessKeys: 1, keyAge: 0, status: 'LOCKED' },
+];
+
+export default function IAMPage() {
+  const [findings, setFindings] = useState(mockIAMFindings);
+  const [filterSeverity, setFilterSeverity] = useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [search, setSearch] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [lastScan, setLastScan] = useState('2024-01-15T06:00:00Z');
+
+  const iamScore = categoryScores.iam;
+
+  const filteredFindings = findings.filter((f) => {
+    const matchSeverity = filterSeverity === 'ALL' || f.severity === filterSeverity;
+    const matchStatus = filterStatus === 'ALL' || f.status === filterStatus;
+    const matchSearch = !search || f.title.toLowerCase().includes(search.toLowerCase()) ||
+      f.affectedUser.toLowerCase().includes(search.toLowerCase());
+    return matchSeverity && matchStatus && matchSearch;
+  });
+
+  const runScan = () => {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      setLastScan(new Date().toISOString());
+    }, 2500);
+  };
+
+  const updateFindingStatus = (id: string, status: FindingStatus) => {
+    setFindings(prev => prev.map(f => f.id === id ? { ...f, status } : f));
+  };
+
+  const scoreColor = iamScore >= 80 ? 'text-green-400' : iamScore >= 60 ? 'text-yellow-400' : 'text-red-400';
+
+  return (
+    <AppLayout>
+      <div className="p-6 space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">IAM Security Auditor</h1>
+            <p className="text-gray-500 text-sm mt-0.5">
+              AWS Identity & Access Management security analysis
+            </p>
+          </div>
+          <button
+            onClick={runScan}
+            disabled={scanning}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white text-sm px-4 py-2 rounded-md transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+            {scanning ? 'Scanning...' : 'Run IAM Scan'}
+          </button>
+        </div>
+
+        {/* Score + summary */}
+        <div className="grid grid-cols-5 gap-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 col-span-1">
+            <div className="text-gray-500 text-xs mb-2">IAM Security Score</div>
+            <div className={`text-4xl font-bold ${scoreColor}`}>{iamScore}</div>
+            <div className="text-gray-600 text-xs mt-1">/100</div>
+            <div className="mt-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full ${iamScore >= 80 ? 'bg-green-500' : iamScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                style={{ width: `${iamScore}%` }} />
+            </div>
+            <div className="text-gray-700 text-xs mt-2">Last scan: {new Date(lastScan).toLocaleString()}</div>
+          </div>
+          {[
+            { label: 'Total IAM Users', value: iamUsers.filter(u => u.type === 'User').length, icon: Users, color: 'text-blue-400' },
+            { label: 'Admin Access', value: iamUsers.filter(u => u.adminAccess).length, icon: Shield, color: 'text-red-400' },
+            { label: 'MFA Not Enabled', value: iamUsers.filter(u => !u.mfa && u.type !== 'Service').length, icon: XCircle, color: 'text-orange-400' },
+            { label: 'Inactive Users', value: iamUsers.filter(u => u.status === 'INACTIVE').length, icon: AlertTriangle, color: 'text-yellow-400' },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon className={`w-4 h-4 ${color}`} />
+                <span className="text-gray-500 text-xs">{label}</span>
+              </div>
+              <div className={`text-3xl font-bold ${color}`}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* IAM Users table */}
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+            <h2 className="text-gray-300 text-sm font-semibold">IAM Users & Service Accounts</h2>
+            <span className="text-gray-600 text-xs">{iamUsers.length} total</span>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-800/40 border-b border-gray-800">
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5">User</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-20">Type</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-24">MFA</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-28">Admin Access</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-28 hidden md:table-cell">Key Age</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-28 hidden lg:table-cell">Last Active</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-24">Status</th>
+                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-2.5 w-24 hidden xl:table-cell">Risk</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {iamUsers.map((user) => {
+                const riskScore = (user.adminAccess ? 40 : 0) + (!user.mfa && user.type !== 'Service' ? 20 : 0) + (user.keyAge > 90 ? 20 : 0) + (user.status === 'INACTIVE' ? 20 : 0);
+                const riskColor = riskScore >= 60 ? 'text-red-400' : riskScore >= 30 ? 'text-orange-400' : 'text-green-400';
+                return (
+                  <tr key={user.name} className={`hover:bg-gray-800/30 transition-colors ${user.status === 'LOCKED' ? 'opacity-60' : ''}`}>
+                    <td className="px-4 py-3">
+                      <span className="text-gray-200 text-sm font-mono font-medium">{user.name}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-gray-500 text-xs">{user.type}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.type === 'Service' ? (
+                        <span className="text-gray-600 text-xs">N/A</span>
+                      ) : user.mfa ? (
+                        <span className="flex items-center gap-1 text-green-400 text-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Enabled
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-red-400 text-xs">
+                          <XCircle className="w-3.5 h-3.5" /> Disabled
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.adminAccess ? (
+                        <span className="flex items-center gap-1 text-red-400 text-xs font-medium">
+                          <AlertTriangle className="w-3.5 h-3.5" /> ADMIN
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">Limited</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      {user.accessKeys > 0 ? (
+                        <span className={`text-xs font-medium ${user.keyAge > 90 ? 'text-red-400' : user.keyAge > 60 ? 'text-orange-400' : 'text-green-400'}`}>
+                          {user.keyAge} days
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">No keys</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span className={`text-xs ${user.status === 'INACTIVE' ? 'text-yellow-400' : 'text-gray-500'}`}>
+                        {user.lastActivity}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={user.status} />
+                    </td>
+                    <td className="px-4 py-3 hidden xl:table-cell">
+                      <span className={`text-xs font-bold ${riskColor}`}>
+                        {riskScore > 0 ? `${riskScore}%` : 'Low'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* IAM Findings */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-gray-200 text-base font-semibold">IAM Security Findings</h2>
+            <div className="flex items-center gap-3 ml-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search findings..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="bg-gray-800 text-gray-300 text-sm pl-9 pr-4 py-1.5 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+                />
+              </div>
+              <select
+                value={filterSeverity}
+                onChange={(e) => setFilterSeverity(e.target.value)}
+                className="bg-gray-800 text-gray-300 text-sm px-3 py-1.5 rounded-md border border-gray-700 focus:outline-none"
+              >
+                <option value="ALL">All Severities</option>
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-gray-800 text-gray-300 text-sm px-3 py-1.5 rounded-md border border-gray-700 focus:outline-none"
+              >
+                <option value="ALL">All Statuses</option>
+                {['OPEN', 'ACKNOWLEDGED', 'REMEDIATED', 'SUPPRESSED'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {filteredFindings.map((finding) => (
+              <div key={finding.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <SeverityBadge severity={finding.severity} />
+                      <StatusBadge status={finding.status} />
+                      <span className="text-gray-600 text-xs">{finding.category}</span>
+                      <span className="text-gray-700 text-xs ml-auto">{new Date(finding.detectedAt).toLocaleDateString()}</span>
+                    </div>
+                    <h3 className="text-gray-200 text-sm font-semibold mb-1">{finding.title}</h3>
+                    <p className="text-gray-500 text-xs mb-2">{finding.description}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-gray-600 text-xs">Affected:</span>
+                      <span className="text-red-400 text-xs font-mono font-medium">{finding.affectedUser}</span>
+                    </div>
+                    <div className="bg-blue-500/5 border border-blue-500/20 rounded p-2">
+                      <span className="text-blue-400 text-xs font-medium">Recommendation: </span>
+                      <span className="text-gray-400 text-xs">{finding.recommendation}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 flex-shrink-0">
+                    {finding.status === 'OPEN' && (
+                      <button
+                        onClick={() => updateFindingStatus(finding.id, 'ACKNOWLEDGED')}
+                        className="text-xs bg-purple-600/20 border border-purple-600/40 text-purple-400 px-3 py-1 rounded hover:bg-purple-600/30 transition-colors"
+                      >
+                        Acknowledge
+                      </button>
+                    )}
+                    {finding.status !== 'REMEDIATED' && (
+                      <button
+                        onClick={() => updateFindingStatus(finding.id, 'REMEDIATED')}
+                        className="text-xs bg-green-600/20 border border-green-600/40 text-green-400 px-3 py-1 rounded hover:bg-green-600/30 transition-colors"
+                      >
+                        Mark Remediated
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

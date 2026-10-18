@@ -1,0 +1,6 @@
+services:
+  cloudguardsocplatformdevelopment1:
+    image: cloudguardsocplatformdevelopment1
+    build:
+      context: .
+      dockerfile: ./Dockerfile
