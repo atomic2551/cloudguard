@@ -1,0 +1,31 @@
+# SecLab XDR & CloudGuard Scope Guard Configuration
+# Only targets listed here are permitted for scans, tests, sniffs, or simulations.
+# Anything outside this file MUST be rejected and logged to audit log.
+
+version: "1.0"
+lab_name: "SecLab-HomeLab"
+
+scope:
+  # Permitted Lab IP Ranges & Hosts
+  networks:
+    - "192.168.1.0/24"
+    - "10.0.0.0/24"
+    - "127.0.0.1/32"
+
+  # Permitted Local Lab Domains
+  domains:
+    - "localhost"
+    - "lab-dc01.local"
+    - "analyst-desktop.local"
+    - "dvwa.local"
+    - "juiceshop.local"
+
+  # Permitted AWS Account IDs for CloudGuard Scanner (Read-Only)
+  aws_accounts:
+    - "123456789012" # AWS Production Lab
+    - "987654321098" # AWS Staging Lab
+
+  # Safe Practice Containers
+  containers:
+    - "dvwa"
+    - "juice-shop"

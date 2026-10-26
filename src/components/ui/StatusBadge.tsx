@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { AlertStatus, IncidentStatus, FindingStatus } from '@/lib/mock-data';
+import type { AlertStatus, IncidentStatus, FindingStatus } from '@/lib/api/types';
 
 type Status = AlertStatus | IncidentStatus | FindingStatus | string;
 

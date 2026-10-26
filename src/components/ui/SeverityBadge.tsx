@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { Severity } from '@/lib/mock-data';
+import type { Severity } from '@/lib/api/types';
 
 const severityConfig: Record<Severity, { label: string; className: string; dot: string }> = {
   CRITICAL: {

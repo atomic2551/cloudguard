@@ -7,14 +7,19 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:cloud": "python -m pytest modules/cloud/test_cloud.py",
     "db:migrate": "npx tsx src/db/migrate.ts",
     "db:seed": "npx tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "dotenv": "^17.3.1",
     "drizzle-orm": "0.45.2",
+    "jose": "^6.2.13",
     "lucide-react": "^1.47.0",
     "next": "16.2.6",
     "pg": "^8.20.0",
@@ -23,6 +28,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "4.1.17",
     "@types/node": "^22.19.15",
     "@types/pg": "^8.18.0",
