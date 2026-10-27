@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, Search, Cloud, ChevronDown, AlertCircle, X } from 'lucide-react';
+import Link from 'next/link';
+import { Bell, Search, Cloud, ChevronDown, AlertCircle, X, LogOut } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
 
 const notifications = [
   { id: '1', text: 'CRITICAL: Privilege Escalation detected', time: '2m ago', severity: 'CRITICAL' },
@@ -12,8 +14,14 @@ const notifications = [
 
 export default function TopBar({ title }: { title?: string }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const { user, logout } = useAuth();
   const unreadCount = 3;
+
+  const initials = user?.displayName
+    ? user.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'SC';
 
   return (
     <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 sticky top-0 z-30">
@@ -49,15 +57,18 @@ export default function TopBar({ title }: { title?: string }) {
         </div>
 
         {/* Alert indicator */}
-        <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-1.5">
+        <Link
+          href="/alerts"
+          className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-1.5 hover:bg-red-500/20 transition-colors"
+        >
           <AlertCircle className="w-3.5 h-3.5 text-red-400" />
           <span className="text-red-400 text-xs font-medium">4 Critical</span>
-        </div>
+        </Link>
 
         {/* Notifications */}
         <div className="relative">
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); }}
             className="relative p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-md transition-colors"
           >
             <Bell className="w-4 h-4" />
@@ -70,7 +81,12 @@ export default function TopBar({ title }: { title?: string }) {
             <div className="absolute right-0 top-10 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
                 <span className="text-gray-200 text-sm font-medium">Notifications</span>
-                <span className="text-xs text-blue-400 cursor-pointer hover:underline">Mark all read</span>
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="text-xs text-blue-400 cursor-pointer hover:underline"
+                >
+                  Mark all read
+                </button>
               </div>
               <div className="divide-y divide-gray-700">
                 {notifications.map((n) => (
@@ -89,20 +105,52 @@ export default function TopBar({ title }: { title?: string }) {
                 ))}
               </div>
               <div className="px-4 py-2 border-t border-gray-700">
-                <a href="/alerts" className="text-blue-400 text-xs hover:underline">View all alerts →</a>
+                <Link href="/alerts" className="text-blue-400 text-xs hover:underline" onClick={() => setShowNotifications(false)}>
+                  View all alerts →
+                </Link>
               </div>
             </div>
           )}
         </div>
 
-        {/* User */}
-        <button className="flex items-center gap-2 hover:bg-gray-800 rounded-md px-2 py-1.5 transition-colors">
-          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">SC</span>
-          </div>
-          <span className="text-gray-300 text-xs font-medium hidden sm:block">Sarah Chen</span>
-          <ChevronDown className="w-3 h-3 text-gray-500" />
-        </button>
+        {/* User menu */}
+        <div className="relative">
+          <button
+            onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); }}
+            className="flex items-center gap-2 hover:bg-gray-800 rounded-md px-2 py-1.5 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">{initials}</span>
+            </div>
+            <span className="text-gray-300 text-xs font-medium hidden sm:block">
+              {user?.displayName || 'Loading...'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-gray-500" />
+          </button>
+
+          {showUserMenu && (
+            <div className="absolute right-0 top-10 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+              <div className="px-4 py-3 border-b border-gray-700">
+                <p className="text-gray-200 text-sm font-medium">{user?.displayName}</p>
+                <p className="text-gray-500 text-xs mt-0.5">{user?.email}</p>
+                {user?.roles && (
+                  <span className="inline-block mt-1 text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                    {user.roles[0]}
+                  </span>
+                )}
+              </div>
+              <div className="py-1">
+                <button
+                  onClick={() => { setShowUserMenu(false); logout(); }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-gray-700 text-sm transition-colors"
+                >
+                  <LogOut className="w-4 h-4 text-gray-500" />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

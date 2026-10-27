@@ -7,6 +7,11 @@
 // 1. STANDARDIZED RESPONSE & ERROR WRAPPERS
 // ==========================================
 
+export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+export type CloudProvider = 'AWS' | 'AZURE' | 'GCP';
+export type UserRole = 'ADMIN' | 'SOC_ANALYST' | 'VIEWER';
+
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

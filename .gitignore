@@ -1,10 +1,12 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 /.pnp
 .pnp.js
 
 # Testing
 /coverage
+test-results/
+playwright-report/
 
 # Next.js
 /.next/
@@ -16,6 +18,7 @@ node_modules/
 # Misc
 .DS_Store
 *.pem
+.venv/
 
 # Debug
 npm-debug.log*
@@ -44,10 +47,8 @@ next-env.d.ts
 
 # Backend / Java / Logs
 target/
+backend/target/
 *.class
 *.log
 backend/startup.log
-
 backend/*.txt
-*.log
-

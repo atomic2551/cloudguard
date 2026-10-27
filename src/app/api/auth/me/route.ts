@@ -1,14 +1,22 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { jsonError, jsonSingle } from '@/lib/api/response';
+import { getSessionUser } from '@/lib/auth-middleware';
+import { getPermissionsForRoles } from '@/lib/rbac';
 import { AuthUserDto } from '@/lib/api/types';
 import { eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
+  const user = await getSessionUser(request);
+  if (!user) {
+    return jsonError(401, 'UNAUTHORIZED', 'Not authenticated', '/api/auth/me');
+  }
+
   try {
-    // Fetch default active user sarah.chen
-    const users = await db
+    const rows = await db
       .select({
         id: schema.users.id,
         username: schema.users.username,
@@ -19,29 +27,29 @@ export async function GET(request: NextRequest) {
         mfaEnabled: schema.users.mfaEnabled,
       })
       .from(schema.users)
-      .where(eq(schema.users.username, 'sarah.chen'))
+      .where(eq(schema.users.id, user.sub))
       .limit(1);
 
-    if (users.length === 0) {
-      return jsonError(404, 'USER_NOT_FOUND', 'Default active user not found', '/api/auth/me');
+    if (rows.length === 0) {
+      return jsonError(404, 'NOT_FOUND', 'User not found', '/api/auth/me');
     }
 
-    const u = users[0];
+    const u = rows[0];
     const userDto: AuthUserDto = {
       id: u.id,
       username: u.username,
       email: u.email,
       displayName: u.displayName,
       department: u.department,
-      status: u.status as any,
+      status: u.status as AuthUserDto['status'],
       mfaEnabled: u.mfaEnabled,
-      roles: ['ADMIN'],
-      permissions: ['alerts:read', 'alerts:write', 'incidents:read', 'incidents:write'],
+      roles: user.roles,
+      permissions: getPermissionsForRoles(user.roles),
     };
 
     return jsonSingle(userDto);
-  } catch (error: any) {
-    console.error('GET /api/auth/me DB error:', error);
-    return jsonError(500, 'INTERNAL_SERVER_ERROR', 'Failed to retrieve current user session', '/api/auth/me');
+  } catch (error: unknown) {
+    console.error('GET /api/auth/me error:', error);
+    return jsonError(500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch user', '/api/auth/me');
   }
 }

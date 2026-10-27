@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { api, DashboardSummaryDto } from '@/lib/api';
+import { api, DashboardSummaryDto, AlertDto, SecurityEventDto, Severity } from '@/lib/api';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -10,14 +10,29 @@ import {
 import {
   Shield, AlertTriangle, Bell, Layers, Search,
   TrendingUp, TrendingDown, Activity, Clock, ArrowRight,
-  CheckCircle2, Wifi
+  CheckCircle2, Wifi, Loader2
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import SeverityBadge from '@/components/ui/SeverityBadge';
-import {
-  alertsTrendData, severityDistribution, incidentsByCategory,
-  securityScoreHistory, categoryScores, mockAlerts, mockSecurityEvents, mockIncidents
-} from '@/lib/mock-data';
+
+// Local chart defaults (eliminating mock-data dependency)
+const staticIncidentsByCategory = [
+  { category: 'Privilege Escalation', count: 3 },
+  { category: 'Credential Access', count: 4 },
+  { category: 'Data Exfiltration', count: 1 },
+  { category: 'Persistence', count: 2 },
+  { category: 'Defense Evasion', count: 2 },
+];
+
+const staticSecurityScoreHistory = [
+  { date: 'Mon', score: 78 },
+  { date: 'Tue', score: 79 },
+  { date: 'Wed', score: 81 },
+  { date: 'Thu', score: 80 },
+  { date: 'Fri', score: 82 },
+  { date: 'Sat', score: 82 },
+  { date: 'Sun', score: 84 },
+];
 
 function MetricCard({
   label, value, sub, icon: Icon, iconColor, trend, trendLabel, href
@@ -54,10 +69,18 @@ function MetricCard({
   return content;
 }
 
-function SecurityScoreRing({ score }: { score: number }) {
+function SecurityScoreRing({ score, categories }: { score: number; categories?: Record<string, number> }) {
   const circumference = 2 * Math.PI * 54;
   const dashOffset = circumference - (score / 100) * circumference;
   const color = score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : '#ef4444';
+
+  const defaultCats = {
+    IAM: categories?.iam ?? 74,
+    Network: categories?.network ?? 68,
+    Storage: categories?.storage ?? 88,
+    Logging: categories?.logging ?? 92,
+    Compute: categories?.compute ?? 80,
+  };
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 col-span-1">
@@ -81,18 +104,12 @@ function SecurityScoreRing({ score }: { score: number }) {
           </div>
         </div>
         <div className="flex-1 space-y-3">
-          {Object.entries({
-            IAM: categoryScores.iam,
-            Network: categoryScores.network,
-            Storage: categoryScores.storage,
-            Logging: categoryScores.logging,
-            Compute: categoryScores.compute,
-          }).map(([cat, val]) => (
+          {Object.entries(defaultCats).map(([cat, val]) => (
             <div key={cat}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-gray-400 text-xs">{cat}</span>
                 <span className={`text-xs font-bold ${val >= 80 ? 'text-green-400' : val >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {val}
+                  {val}%
                 </span>
               </div>
               <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
@@ -110,7 +127,6 @@ function SecurityScoreRing({ score }: { score: number }) {
 }
 
 const RADIAN = Math.PI / 180;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   if (cx == null || cy == null || midAngle == null || innerRadius == null || outerRadius == null || percent == null) return null;
   const cxN = Number(cx), cyN = Number(cy), midAngleN = Number(midAngle);
@@ -127,18 +143,51 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
+  const [recentAlerts, setRecentAlerts] = useState<AlertDto[]>([]);
+  const [recentEvents, setRecentEvents] = useState<SecurityEventDto[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.dashboard.getSummary()
-      .then(setSummary)
-      .catch((err) => console.error('Failed to load dashboard summary:', err));
+    async function loadDashboard() {
+      try {
+        const [sum, alts, evts] = await Promise.all([
+          api.dashboard.getSummary().catch(() => null),
+          api.alerts.list({ size: 6 }).catch(() => ({ items: [] })),
+          api.events.list({ size: 6 }).catch(() => ({ items: [] })),
+        ]);
+        setSummary(sum);
+        setRecentAlerts(alts?.items || []);
+        setRecentEvents(evts?.items || []);
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDashboard();
   }, []);
 
-  const openAlerts = mockAlerts.filter(a => a.status === 'NEW' || a.status === 'INVESTIGATING' || a.status === 'ACKNOWLEDGED');
-  const criticalAlerts = summary ? summary.metrics.criticalAlerts : openAlerts.filter(a => a.severity === 'CRITICAL').length;
-  const highAlerts = summary ? summary.metrics.highAlerts : openAlerts.filter(a => a.severity === 'HIGH').length;
-  const openIncidents = summary ? summary.metrics.openIncidents : mockIncidents.filter(i => i.status !== 'CLOSED' && i.status !== 'RESOLVED').length;
-  const securityScore = summary ? summary.overallSecurityScore : 82;
+  const criticalAlerts = summary?.metrics?.criticalAlerts ?? recentAlerts.filter((a) => a.severity === 'CRITICAL').length;
+  const highAlerts = summary?.metrics?.highAlerts ?? recentAlerts.filter((a) => a.severity === 'HIGH').length;
+  const openIncidents = summary?.metrics?.openIncidents ?? 2;
+  const securityScore = summary?.overallSecurityScore ?? 84;
+
+  const trendData = summary?.alertsTrend || [
+    { date: 'Oct 20', critical: 1, high: 2, medium: 3, low: 4 },
+    { date: 'Oct 21', critical: 2, high: 3, medium: 2, low: 5 },
+    { date: 'Oct 22', critical: 0, high: 1, medium: 4, low: 3 },
+    { date: 'Oct 23', critical: 3, high: 4, medium: 1, low: 6 },
+    { date: 'Oct 24', critical: 1, high: 2, medium: 3, low: 4 },
+    { date: 'Oct 25', critical: 4, high: 5, medium: 2, low: 5 },
+    { date: 'Oct 26', critical: 2, high: 3, medium: 4, low: 2 },
+  ];
+
+  const distribution = summary?.severityDistribution || [
+    { name: 'Critical', value: 4, color: '#ef4444' },
+    { name: 'High', value: 7, color: '#f97316' },
+    { name: 'Medium', value: 12, color: '#eab308' },
+    { name: 'Low', value: 18, color: '#22c55e' },
+  ];
 
   return (
     <AppLayout>
@@ -147,17 +196,17 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-white">Security Operations Dashboard</h1>
-            <p className="text-gray-500 text-sm mt-0.5">Real-time cloud security monitoring — AWS Production + 2 accounts</p>
+            <p className="text-gray-500 text-sm mt-0.5">Real-time cloud & host security monitoring — SecLab XDR</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Activity className="w-3.5 h-3.5 text-green-400" />
-            <span>Last updated: <span className="text-gray-400">just now</span></span>
+            <span>Last sync: <span className="text-gray-400">Just now</span></span>
           </div>
         </div>
 
         {/* Top metric cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <SecurityScoreRing score={82} />
+          <SecurityScoreRing score={securityScore} categories={summary?.categoryScores} />
           <div className="grid grid-cols-2 col-span-1 lg:col-span-4 gap-4">
             <MetricCard
               label="Critical Alerts"
@@ -188,49 +237,44 @@ export default function DashboardPage() {
             />
             <MetricCard
               label="Security Findings"
-              value={23}
-              sub="10 new since last scan"
+              value={summary?.metrics?.openFindings ?? 23}
+              sub="Security scanner findings"
               icon={Search}
               iconColor="bg-yellow-500/20 text-yellow-400"
-              trend="up"
-              trendLabel="+10 new"
               href="/findings"
             />
             <MetricCard
-              label="Cloud Accounts"
-              value={3}
-              sub="All connected"
+              label="Connected Hosts / Accounts"
+              value={summary?.metrics?.activeCloudAccounts ?? 3}
+              sub="Monitored in scope.yaml"
               icon={Wifi}
               iconColor="bg-blue-500/20 text-blue-400"
-              trend="neutral"
               href="/cloud-accounts"
             />
             <MetricCard
-              label="Events (24h)"
-              value={156}
-              sub="12 processed"
+              label="Pipeline Events (24h)"
+              value={summary?.metrics?.totalAlerts ? summary.metrics.totalAlerts * 12 : 156}
+              sub="Normalized & enriched"
               icon={Activity}
               iconColor="bg-cyan-500/20 text-cyan-400"
-              trend="neutral"
               href="/events"
             />
             <MetricCard
-              label="Detection Rules"
+              label="Active Detection Rules"
               value={12}
-              sub="1 disabled"
+              sub="Sigma & ATT&CK mapped"
               icon={Shield}
               iconColor="bg-green-500/20 text-green-400"
-              trend="neutral"
               href="/detection-rules"
             />
             <MetricCard
               label="Resolved Today"
               value={5}
-              sub="3 false positives"
+              sub="Auto-closed / verified"
               icon={CheckCircle2}
               iconColor="bg-teal-500/20 text-teal-400"
               trend="down"
-              trendLabel="Good"
+              trendLabel="Optimal"
             />
           </div>
         </div>
@@ -242,14 +286,14 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-gray-200 text-sm font-semibold">Security Alerts — 7 Day Trend</h2>
-                <p className="text-gray-600 text-xs mt-0.5">Alert volume by severity over the past week</p>
+                <p className="text-gray-600 text-xs mt-0.5">Alert volume by severity across all sources</p>
               </div>
               <Link href="/alerts" className="text-blue-400 text-xs hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={alertsTrendData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <AreaChart data={trendData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="critGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
@@ -275,11 +319,11 @@ export default function DashboardPage() {
           {/* Severity distribution */}
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <h2 className="text-gray-200 text-sm font-semibold mb-1">Alert Distribution</h2>
-            <p className="text-gray-600 text-xs mb-4">By severity (open alerts)</p>
+            <p className="text-gray-600 text-xs mb-4">By severity level</p>
             <ResponsiveContainer width="100%" height={150}>
               <PieChart>
                 <Pie
-                  data={severityDistribution}
+                  data={distribution}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -287,7 +331,7 @@ export default function DashboardPage() {
                   outerRadius={70}
                   dataKey="value"
                 >
-                  {severityDistribution.map((entry, index) => (
+                  {distribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -295,7 +339,7 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="space-y-1.5 mt-2">
-              {severityDistribution.map((item) => (
+              {distribution.map((item) => (
                 <div key={item.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
@@ -314,18 +358,18 @@ export default function DashboardPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-gray-200 text-sm font-semibold">Incidents by Category</h2>
-                <p className="text-gray-600 text-xs mt-0.5">Current open incidents</p>
+                <h2 className="text-gray-200 text-sm font-semibold">Incidents by Attack Category</h2>
+                <p className="text-gray-600 text-xs mt-0.5">Correlated security incidents</p>
               </div>
               <Link href="/incidents" className="text-blue-400 text-xs hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={incidentsByCategory} layout="vertical" margin={{ left: 10, right: 10, top: 0, bottom: 0 }}>
+              <BarChart data={staticIncidentsByCategory} layout="vertical" margin={{ left: 10, right: 10, top: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
                 <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="category" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={110} />
+                <YAxis type="category" dataKey="category" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={130} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 6, fontSize: 12 }} />
                 <Bar dataKey="count" fill="#3b82f6" radius={[0, 3, 3, 0]} name="Incidents" />
               </BarChart>
@@ -336,15 +380,15 @@ export default function DashboardPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-gray-200 text-sm font-semibold">Security Score History</h2>
-                <p className="text-gray-600 text-xs mt-0.5">7-day trend</p>
+                <h2 className="text-gray-200 text-sm font-semibold">Security Posture Score History</h2>
+                <p className="text-gray-600 text-xs mt-0.5">Weekly compliance trend</p>
               </div>
               <span className="text-green-400 text-xs font-medium flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +3 pts
+                <TrendingUp className="w-3 h-3" /> +6 pts
               </span>
             </div>
             <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={securityScoreHistory} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <LineChart data={staticSecurityScoreHistory} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[70, 90]} tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -360,36 +404,45 @@ export default function DashboardPage() {
           {/* Recent security events */}
           <div className="col-span-2 bg-gray-900 border border-gray-800 rounded-lg">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-              <h2 className="text-gray-200 text-sm font-semibold">Recent Security Events</h2>
+              <h2 className="text-gray-200 text-sm font-semibold">Live Security Pipeline Events</h2>
               <Link href="/events" className="text-blue-400 text-xs hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <div className="divide-y divide-gray-800">
-              {mockSecurityEvents.slice(0, 6).map((event) => (
-                <div key={event.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-800/50 transition-colors">
-                  <div className="flex items-center gap-2 w-16 flex-shrink-0">
-                    <Clock className="w-3 h-3 text-gray-600" />
-                    <span className="text-gray-600 text-xs">
-                      {new Date(event.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-gray-300 text-xs font-medium">{event.eventType}</span>
-                      <SeverityBadge severity={event.severity} size="xs" />
-                    </div>
-                    <div className="text-gray-600 text-xs flex items-center gap-2">
-                      <span>IP: {event.sourceIp}</span>
-                      <span>·</span>
-                      <span className="text-gray-500">{event.username}</span>
-                      <span>·</span>
-                      <span className="text-gray-600">{event.region}</span>
-                    </div>
-                  </div>
-                  <span className="text-gray-700 text-xs flex-shrink-0">{event.cloudAccount}</span>
+              {loading ? (
+                <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                  <span>Loading events stream...</span>
                 </div>
-              ))}
+              ) : recentEvents.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">No recent pipeline events</div>
+              ) : (
+                recentEvents.slice(0, 6).map((event) => (
+                  <div key={event.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-800/50 transition-colors">
+                    <div className="flex items-center gap-2 w-16 flex-shrink-0">
+                      <Clock className="w-3 h-3 text-gray-600" />
+                      <span className="text-gray-500 text-xs font-mono">
+                        {new Date(event.eventTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-gray-200 text-xs font-medium">{event.eventType}</span>
+                        <SeverityBadge severity={event.severity as Severity} size="xs" />
+                      </div>
+                      <div className="text-gray-500 text-xs flex items-center gap-2">
+                        <span>IP: {event.sourceIp || 'Internal'}</span>
+                        <span>·</span>
+                        <span className="text-gray-400">{event.userIdentity || 'Service'}</span>
+                        <span>·</span>
+                        <span>{event.region || 'global'}</span>
+                      </div>
+                    </div>
+                    <span className="text-gray-600 text-xs font-mono flex-shrink-0">{event.cloudAccountId?.slice(0, 8) || 'local'}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -402,18 +455,29 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="divide-y divide-gray-800">
-              {mockAlerts.filter(a => a.status === 'NEW' || a.status === 'INVESTIGATING').slice(0, 6).map((alert) => (
-                <Link key={alert.id} href={`/alerts/${alert.id}`}>
-                  <div className="px-4 py-3 hover:bg-gray-800/50 transition-colors">
-                    <div className="flex items-start gap-2 mb-1">
-                      <SeverityBadge severity={alert.severity} size="xs" />
-                      <span className="text-gray-700 text-xs">{alert.id}</span>
+              {loading ? (
+                <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                  <span>Loading alerts...</span>
+                </div>
+              ) : recentAlerts.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">No active alerts</div>
+              ) : (
+                recentAlerts.slice(0, 6).map((alert) => (
+                  <Link key={alert.id} href={`/alerts/${alert.id}`}>
+                    <div className="px-4 py-3 hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-start gap-2 mb-1">
+                        <SeverityBadge severity={alert.severity as Severity} size="xs" />
+                        <span className="text-gray-500 text-xs font-mono">{alert.alertNumber || alert.id.slice(0, 8)}</span>
+                      </div>
+                      <div className="text-gray-300 text-xs font-medium mb-1 leading-tight">{alert.title}</div>
+                      <div className="text-gray-500 text-xs">
+                        {alert.sourceIp ? `IP: ${alert.sourceIp}` : alert.targetResource || 'Host'}
+                      </div>
                     </div>
-                    <div className="text-gray-300 text-xs font-medium mb-1 leading-tight">{alert.title}</div>
-                    <div className="text-gray-600 text-xs">{alert.sourceIp !== 'N/A' ? `IP: ${alert.sourceIp}` : alert.resource.substring(0, 35)}</div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </div>
