@@ -119,6 +119,28 @@ public class AlertService {
         return alertMapper.toDto(alert);
     }
 
+    @Transactional
+    public AlertCommentDto addAlertComment(String idOrNumber, String content, String currentUsername) {
+        Alert alert = findAlert(idOrNumber);
+        User currentUser = userRepository.findByUsername(currentUsername).orElse(null);
+        AlertComment comment = new AlertComment();
+        comment.setAlert(alert);
+        comment.setAuthor(currentUser);
+        comment.setContent(content);
+        comment = alertCommentRepository.save(comment);
+
+        AlertTimeline timelineEvent = new AlertTimeline();
+        timelineEvent.setAlert(alert);
+        timelineEvent.setEventTime(OffsetDateTime.now());
+        timelineEvent.setEventType("COMMENT");
+        timelineEvent.setDescription("Added comment: " + (content.length() > 50 ? content.substring(0, 47) + "..." : content));
+        timelineEvent.setActor(currentUser != null ? currentUser.getDisplayName() : "System");
+        timelineEvent.setSeverity(alert.getSeverity());
+        alertTimelineRepository.save(timelineEvent);
+
+        return alertMapper.toCommentDto(comment);
+    }
+
     private Alert findAlert(String idOrNumber) {
         if (idOrNumber == null || idOrNumber.trim().isEmpty()) {
             throw new EntityNotFoundException("Alert identifier cannot be null or empty");

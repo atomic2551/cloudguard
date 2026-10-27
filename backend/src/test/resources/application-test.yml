@@ -16,10 +16,11 @@ spring:
     show-sql: false
 
 cloudguard:
-  security:
-    jwt:
-      secret: "zQ3j7K2wH5bR+X/uV4m9nP1hG8sF0yL6cT3aE7vM9qJ2w=\n" # Base64 encoded test secret
-      expiration-ms: 3600000
+  jwt:
+    secret: "zQ3j7K2wH5bR+X/uV4m9nP1hG8sF0yL6cT3aE7vM9qJ2w=" # Base64 encoded test secret
+    expiration-ms: 3600000
+  cors:
+    allowed-origins: "http://localhost:3000"
 
 logging:
   level:
