@@ -82,7 +82,8 @@ class CloudTrailIngestor:
 
         user_identity = raw_record.get("userIdentity", {})
         username = user_identity.get("userName") or user_identity.get("principalId") or "unknown"
-        source_ip = raw_record.get("sourceIPAddress", "0.0.0.0")
+        # Fallback dummy IP literal for CloudTrail events missing source IP; not a socket bind
+        source_ip = raw_record.get("sourceIPAddress", "0.0.0.0")  # nosec B104
 
         # Map to MITRE
         mitre_info = CLOUDTRAIL_MITRE_MAP.get(event_name)
