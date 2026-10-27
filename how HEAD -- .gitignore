@@ -1,0 +1,11 @@
+[33mcommit d28f229184aeb4a4c77d71b47867685b7bef8523[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/consolidate[m[33m)[m
+Author: atomic2551 <misterpantera89@gmail.com>
+Date:   Tue Oct 27 08:59:38 2026 +0500
+
+    chore: update gitignore and untrack test-results
+
+ .gitignore                                         |  9 [32m++++[m[31m----[m
+ test-results/.last-run.json                        |  7 [31m-------[m
+ .../error-context.md                               | 24 [31m----------------------[m
+ .../error-context.md                               | 24 [31m----------------------[m
+ 4 files changed, 5 insertions(+), 59 deletions(-)
