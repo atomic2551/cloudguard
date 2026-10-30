@@ -1,15 +1,24 @@
 spring:
+  config:
+    import:
+      - optional:file:../.env[.properties]
+      - optional:file:.env[.properties]
   datasource:
-    url: jdbc:tc:postgresql:15-alpine:///cloudguard_test
-    username: test
-    password: test
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/cloudguard_test}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    url: ${TEST_FLYWAY_URL:${TEST_DB_URL:jdbc:postgresql://localhost:5432/cloudguard_test}}
+    user: ${FLYWAY_USER}
+    password: ${FLYWAY_PASSWORD}
+    locations: classpath:db/migration
+    clean-disabled: false
   sql:
     init:
       mode: always
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
+      data-locations: classpath:fixtures/test-data.sql
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,7 +26,7 @@ spring:
 
 cloudguard:
   jwt:
-    secret: "zQ3j7K2wH5bR+X/uV4m9nP1hG8sF0yL6cT3aE7vM9qJ2w=" # Base64 encoded test secret
+    secret: ${JWT_SECRET}
     expiration-ms: 3600000
   cors:
     allowed-origins: "http://localhost:3000"

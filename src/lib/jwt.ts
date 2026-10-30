@@ -1,16 +1,10 @@
 /**
- * JWT utility — sign and verify tokens stored in httpOnly cookies.
- * Uses the jose library (Web Crypto, Edge-runtime compatible).
+ * JWT utility — REMOVED.
+ *
+ * Spring Boot is the single JWT authority. Next.js does NOT issue or verify tokens.
+ * This module is retained only for the JwtPayload type used in UI components
+ * that read user info from cookies or server responses.
  */
-
-import { SignJWT, jwtVerify } from 'jose';
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'cloudguard-soc-dev-secret-change-in-production-32chars'
-);
-
-const ALGORITHM = 'HS256';
-const EXPIRES_IN = '8h';
 
 export interface JwtPayload {
   sub: string;        // user UUID
@@ -21,15 +15,17 @@ export interface JwtPayload {
   exp?: number;
 }
 
-export async function signToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): Promise<string> {
-  return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: ALGORITHM })
-    .setIssuedAt()
-    .setExpirationTime(EXPIRES_IN)
-    .sign(JWT_SECRET);
+/**
+ * @deprecated Do not call — Spring Boot handles all JWT operations.
+ * Retained only to avoid breaking imports in UI components that reference this type.
+ */
+export async function signToken(_payload: Omit<JwtPayload, 'iat' | 'exp'>): Promise<string> {
+  throw new Error('JWT signing is handled by Spring Boot. Do not use this function.');
 }
 
-export async function verifyToken(token: string): Promise<JwtPayload> {
-  const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: [ALGORITHM] });
-  return payload as unknown as JwtPayload;
+/**
+ * @deprecated Do not call — Spring Boot handles all JWT verification.
+ */
+export async function verifyToken(_token: string): Promise<JwtPayload> {
+  throw new Error('JWT verification is handled by Spring Boot. Do not use this function.');
 }

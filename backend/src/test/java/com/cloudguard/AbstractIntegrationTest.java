@@ -39,11 +39,24 @@ public abstract class AbstractIntegrationTest {
             registry.add("spring.datasource.url", postgres::getJdbcUrl);
             registry.add("spring.datasource.username", postgres::getUsername);
             registry.add("spring.datasource.password", postgres::getPassword);
+            registry.add("spring.flyway.url", postgres::getJdbcUrl);
+            registry.add("spring.flyway.user", postgres::getUsername);
+            registry.add("spring.flyway.password", postgres::getPassword);
         } else {
-            registry.add("spring.datasource.url", () -> "jdbc:postgresql://localhost:5432/cloudguard_db");
-            registry.add("spring.datasource.username", () -> "postgres");
-            registry.add("spring.datasource.password", () -> "postgres");
+            String testDbUrl = System.getProperty("test.db.url",
+                    System.getenv().getOrDefault("TEST_DB_URL", "jdbc:postgresql://localhost:5432/cloudguard_test"));
+            String testDbUser = System.getProperty("test.db.user",
+                    System.getenv().getOrDefault("TEST_DB_USER", "postgres"));
+            String testDbPassword = System.getProperty("test.db.password",
+                    System.getenv().getOrDefault("TEST_DB_PASSWORD", "postgres"));
+
+            registry.add("spring.datasource.url", () -> testDbUrl);
+            registry.add("spring.datasource.username", () -> testDbUser);
+            registry.add("spring.datasource.password", () -> testDbPassword);
             registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+            registry.add("spring.flyway.url", () -> testDbUrl);
+            registry.add("spring.flyway.user", () -> testDbUser);
+            registry.add("spring.flyway.password", () -> testDbPassword);
         }
     }
 
