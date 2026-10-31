@@ -4,10 +4,23 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Shield, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 
+function sanitizeRedirect(target: string | null | undefined): string {
+  if (!target) return '/dashboard';
+  // Must start with a single "/" and not "//" or "/\"
+  if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {
+    return '/dashboard';
+  }
+  // Must contain no scheme (no colon or protocol like https:)
+  if (target.includes(':') || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(target)) {
+    return '/dashboard';
+  }
+  return target;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get('from') || '/dashboard';
+  const from = sanitizeRedirect(searchParams.get('from'));
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,21 +37,42 @@ function LoginForm() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setError(data.message || 'Invalid credentials. Please try again.');
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('Invalid username or password');
+        } else if (res.status === 423) {
+          setError('Account locked');
+        } else if (res.status === 403) {
+          setError('Request blocked (CSRF/Origin)');
+        } else if (res.status >= 500) {
+          setError('Server unavailable');
+        } else {
+          try {
+            const data = await res.json();
+            setError(data.message || 'Login failed');
+          } catch {
+            setError('Login failed');
+          }
+        }
         return;
       }
 
-      // Cookie is set by the server; just redirect
+      // Bootstrap CSRF token cookie
+      try {
+        await fetch('/api/auth/csrf', { method: 'GET', credentials: 'same-origin', cache: 'no-store' });
+      } catch {
+        // ignore
+      }
+
+      // Cookie is set by the server (cg_token); just redirect
       router.push(from);
       router.refresh();
     } catch {
-      setError('Network error. Please check your connection and try again.');
+      setError('Server unavailable');
     } finally {
       setLoading(false);
     }

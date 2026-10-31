@@ -338,7 +338,7 @@ export default function IncidentsPage() {
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="text-gray-400 text-xs bg-gray-800 px-2 py-0.5 rounded border border-gray-700">
-                          {inc.alertCount ?? 0}
+                          {inc.alertCount ?? '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">

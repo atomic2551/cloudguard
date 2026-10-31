@@ -69,8 +69,6 @@ export interface LoginRequestDto {
 }
 
 export interface LoginResponseDto {
-  token: string;
-  tokenType: string;
   user: AuthUserDto;
 }
 

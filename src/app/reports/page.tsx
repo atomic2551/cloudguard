@@ -5,6 +5,7 @@ import { FileText, Download, RefreshCw, BarChart3, Shield, AlertTriangle, Users,
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import AppLayout from '@/components/layout/AppLayout';
 import { api, SecurityReportDto } from '@/lib/api';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 
 const staticAlertsTrend = [
   { date: 'Oct 20', critical: 1, high: 2, medium: 3 },
@@ -42,22 +43,22 @@ export default function ReportsPage() {
     }, 1500);
   };
 
-  const overallScore = report?.overallScore ?? 84;
-  const categoryScores = report?.categoryScores ?? {
-    IAM: 74,
-    Network: 68,
-    Storage: 88,
-    Logging: 92,
-    Compute: 80,
+  const overallScore = report?.overallScore ?? null;
+  const categoryScores: Record<string, number | null> = report?.categoryScores ?? {
+    IAM: null,
+    Network: null,
+    Storage: null,
+    Logging: null,
+    Compute: null,
   };
 
-  const stats = report?.summary ?? {
-    totalAlerts: 41,
-    resolvedAlerts: 16,
-    openIncidents: 2,
-    resolvedIncidents: 8,
-    criticalFindings: 2,
-    openFindings: 23,
+  const stats: Record<string, number | null> = report?.summary ?? {
+    totalAlerts: null,
+    resolvedAlerts: null,
+    openIncidents: null,
+    resolvedIncidents: null,
+    criticalFindings: null,
+    openFindings: null,
   };
 
   return (
@@ -66,7 +67,10 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Security & Compliance Reports</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">Security & Compliance Reports</h1>
+              <DemoDataBadge />
+            </div>
             <p className="text-gray-500 text-sm mt-0.5">Automated security posture summary — SecLab XDR Platform</p>
           </div>
           <div className="flex items-center gap-3">
@@ -95,6 +99,14 @@ export default function ReportsPage() {
           </div>
         )}
 
+        {/* Data unavailable */}
+        {!report && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-400 text-sm">Data unavailable — no report data loaded from backend. Values display dashes until data is available.</span>
+          </div>
+        )}
+
         {/* Overall security posture */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-5">
           <h2 className="text-gray-200 text-base font-semibold mb-4 flex items-center gap-2">
@@ -103,7 +115,7 @@ export default function ReportsPage() {
           </h2>
           <div className="grid grid-cols-5 gap-4">
             <div className="text-center">
-              <div className="text-5xl font-bold text-green-400 mb-1">{overallScore}</div>
+              <div className="text-5xl font-bold text-green-400 mb-1">{overallScore !== null ? overallScore : '—'}</div>
               <div className="text-gray-400 text-sm font-medium">Compliance Index</div>
               <div className="text-gray-600 text-xs mt-1">/100 Benchmark</div>
             </div>
@@ -112,14 +124,14 @@ export default function ReportsPage() {
                 <div key={cat}>
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-gray-400 text-sm">{cat} Security</span>
-                    <span className={`text-sm font-bold ${score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {score}/100
+                    <span className={`text-sm font-bold ${score === null ? 'text-gray-600' : score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {score !== null ? `${score}/100` : '—'}
                     </span>
                   </div>
                   <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                      style={{ width: `${score}%` }}
+                      className={`h-full rounded-full ${score === null ? 'bg-gray-700' : score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      style={{ width: score !== null ? `${score}%` : '0%' }}
                     />
                   </div>
                 </div>
@@ -141,7 +153,7 @@ export default function ReportsPage() {
                 { label: 'Resolved Operations', value: stats.resolvedAlerts, color: 'text-green-400' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-gray-800/50 rounded-lg p-3">
-                  <div className={`text-xl font-bold ${color}`}>{value}</div>
+                  <div className={`text-xl font-bold ${color}`}>{value ?? '—'}</div>
                   <div className="text-gray-600 text-xs">{label}</div>
                 </div>
               ))}
@@ -198,7 +210,7 @@ export default function ReportsPage() {
                 { label: 'Resolved Incidents', value: stats.resolvedIncidents, color: 'text-green-400' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-gray-800/50 rounded-lg p-3">
-                  <div className={`text-xl font-bold ${color}`}>{value}</div>
+                  <div className={`text-xl font-bold ${color}`}>{value ?? '—'}</div>
                   <div className="text-gray-600 text-xs">{label}</div>
                 </div>
               ))}
@@ -216,7 +228,7 @@ export default function ReportsPage() {
                 { label: 'Critical Exposures', value: stats.criticalFindings, color: 'text-red-400' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-gray-800/50 rounded-lg p-3">
-                  <div className={`text-xl font-bold ${color}`}>{value}</div>
+                  <div className={`text-xl font-bold ${color}`}>{value ?? '—'}</div>
                   <div className="text-gray-600 text-xs">{label}</div>
                 </div>
               ))}

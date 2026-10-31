@@ -233,8 +233,8 @@ export default function FindingsPage() {
                         <span className="text-gray-400 text-xs font-mono">{finding.resourceId?.substring(0, 30) || 'N/A'}</span>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className={`text-xs font-bold ${(finding.riskScore || 0) >= 90 ? 'text-red-400' : (finding.riskScore || 0) >= 70 ? 'text-orange-400' : 'text-yellow-400'}`}>
-                          {finding.riskScore || 50}
+                        <span className={`text-xs font-bold ${finding.riskScore == null ? 'text-gray-600' : finding.riskScore >= 90 ? 'text-red-400' : finding.riskScore >= 70 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                          {finding.riskScore !== undefined ? finding.riskScore : '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3"><StatusBadge status={finding.status} /></td>
@@ -289,7 +289,7 @@ export default function FindingsPage() {
                 <p className="text-gray-500 text-xs mb-3">{finding.description}</p>
                 <div className="flex items-center gap-3 text-xs text-gray-600">
                   <span className="font-mono text-gray-400">{finding.resourceId?.substring(0, 30)}</span>
-                  <span className="ml-auto">Risk: <span className="text-orange-400 font-bold">{finding.riskScore || 50}</span></span>
+                  <span className="ml-auto">Risk: <span className="text-orange-400 font-bold">{finding.riskScore !== undefined ? finding.riskScore : '—'}</span></span>
                 </div>
               </div>
             ))}

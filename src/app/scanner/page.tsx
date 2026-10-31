@@ -90,9 +90,9 @@ export default function ScannerPage() {
       high: findings.filter((f) => f.severity === 'HIGH' && f.status === 'OPEN').length,
       medium: findings.filter((f) => f.severity === 'MEDIUM' && f.status === 'OPEN').length,
       low: findings.filter((f) => f.severity === 'LOW' && f.status === 'OPEN').length,
-      resources: 266,
+      resources: findings.length > 0 ? new Set(findings.map((f) => f.resourceId).filter(Boolean)).size : (loading ? '—' : 0),
     };
-  }, [findings]);
+  }, [findings, loading]);
 
   return (
     <AppLayout>
@@ -267,8 +267,8 @@ export default function ScannerPage() {
                       </div>
                       <div>
                         <span className="text-gray-500">Risk Score: </span>
-                        <span className={`font-bold ${(finding.riskScore || 0) >= 90 ? 'text-red-400' : (finding.riskScore || 0) >= 70 ? 'text-orange-400' : 'text-yellow-400'}`}>
-                          {finding.riskScore || 80}/100
+                        <span className={`font-bold ${finding.riskScore == null ? 'text-gray-600' : finding.riskScore >= 90 ? 'text-red-400' : finding.riskScore >= 70 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                          {finding.riskScore !== undefined ? `${finding.riskScore}/100` : 'N/A'}
                         </span>
                       </div>
                     </div>
