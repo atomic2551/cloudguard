@@ -1,68 +1,66 @@
 package com.cloudguard;
 
 import io.restassured.RestAssured;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@SuppressWarnings("resource")
 public abstract class AbstractIntegrationTest {
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractIntegrationTest.class);
 
     @LocalServerPort
     protected int port;
 
-    private static PostgreSQLContainer<?> postgres;
+    @Autowired
+    protected DataSource dataSource;
 
-    static {
-        try {
-            postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:15-alpine"))
-                    .withDatabaseName("cloudguard_test")
-                    .withUsername("test")
-                    .withPassword("test");
-            postgres.start();
-        } catch (Throwable e) {
-            System.err.println("Testcontainers Docker failed, falling back to local PostgreSQL: " + e.getMessage());
-            postgres = null;
-        }
-    }
+    @Autowired
+    protected Flyway flyway;
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        if (postgres != null && postgres.isRunning()) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl);
-            registry.add("spring.datasource.username", postgres::getUsername);
-            registry.add("spring.datasource.password", postgres::getPassword);
-            registry.add("spring.flyway.url", postgres::getJdbcUrl);
-            registry.add("spring.flyway.user", postgres::getUsername);
-            registry.add("spring.flyway.password", postgres::getPassword);
-        } else {
-            String testDbUrl = System.getProperty("test.db.url",
-                    System.getenv().getOrDefault("TEST_DB_URL", "jdbc:postgresql://localhost:5432/cloudguard_test"));
-            String testDbUser = System.getProperty("test.db.user",
-                    System.getenv().getOrDefault("TEST_DB_USER", "postgres"));
-            String testDbPassword = System.getProperty("test.db.password",
-                    System.getenv().getOrDefault("TEST_DB_PASSWORD", "postgres"));
-
-            registry.add("spring.datasource.url", () -> testDbUrl);
-            registry.add("spring.datasource.username", () -> testDbUser);
-            registry.add("spring.datasource.password", () -> testDbPassword);
-            registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-            registry.add("spring.flyway.url", () -> testDbUrl);
-            registry.add("spring.flyway.user", () -> testDbUser);
-            registry.add("spring.flyway.password", () -> testDbPassword);
-        }
-    }
+    private static boolean loggedConnections = false;
 
     @BeforeEach
     public void setUp() {
         RestAssured.port = port;
+
+        if (!loggedConnections) {
+            // Verify and log Flyway connection user & database
+            try (Connection conn = flyway.getConfiguration().getDataSource().getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT current_user, current_database()")) {
+                if (rs.next()) {
+                    log.info("FLYWAY TEST CONNECTION: user='{}', database='{}'", rs.getString(1), rs.getString(2));
+                }
+            } catch (SQLException e) {
+                log.error("Failed to verify Flyway test connection", e);
+            }
+
+            // Verify and log App DataSource connection user & database
+            try (Connection conn = dataSource.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT current_user, current_database()")) {
+                if (rs.next()) {
+                    log.info("APP DATASOURCE TEST CONNECTION: user='{}', database='{}'", rs.getString(1), rs.getString(2));
+                }
+            } catch (SQLException e) {
+                log.error("Failed to verify DataSource test connection", e);
+            }
+
+            loggedConnections = true;
+        }
     }
 }
-

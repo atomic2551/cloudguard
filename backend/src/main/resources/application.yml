@@ -1,5 +1,6 @@
 server:
   port: 8080
+  forward-headers-strategy: none
 
 spring:
   config:
@@ -22,14 +23,19 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 1
+    placeholders:
+      app_role: ${DB_USER}
 
 cloudguard:
   jwt:
     secret: ${JWT_SECRET}
-    expiration-ms: 86400000
-  cors:
-    allowed-origins: ${FRONTEND_URL:http://localhost:3000}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  cookie:
+    secure: ${COOKIE_SECURE:true}
+  auth:
+    header-fallback: ${AUTH_HEADER_FALLBACK:false}
+  allowed-origins: ${ALLOWED_ORIGINS:}
+  trusted-proxies: ${CLOUDGUARD_TRUSTED_PROXIES:127.0.0.1,::1,0:0:0:0:0:0:0:1}
   security:
-    max-failed-login-attempts: 5
-    lockout-duration-minutes: 30
-
+    max-failed-login-attempts: ${MAX_FAILED_LOGIN_ATTEMPTS:5}
+    lockout-duration-minutes: ${LOCKOUT_DURATION_MINUTES:15}

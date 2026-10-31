@@ -19,7 +19,7 @@ public class RbacIntegrationTest extends AbstractIntegrationTest {
     @Test
     public void unauthenticatedRequests_areRejected() throws Exception {
         mockMvc.perform(get("/api/alerts"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -8,13 +8,17 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
   flyway:
     enabled: true
-    url: ${TEST_FLYWAY_URL:${TEST_DB_URL:jdbc:postgresql://localhost:5432/cloudguard_test}}
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/cloudguard_test}
     user: ${FLYWAY_USER}
     password: ${FLYWAY_PASSWORD}
     locations: classpath:db/migration
     clean-disabled: false
+    placeholders:
+      app_role: ${DB_USER}
   sql:
     init:
       mode: always
@@ -28,8 +32,15 @@ cloudguard:
   jwt:
     secret: ${JWT_SECRET}
     expiration-ms: 3600000
-  cors:
-    allowed-origins: "http://localhost:3000"
+  cookie:
+    secure: false
+  auth:
+    header-fallback: true
+  allowed-origins: "http://localhost:3000"
+  trusted-proxies: "127.0.0.1,::1,0:0:0:0:0:0:0:1"
+  security:
+    max-failed-login-attempts: 5
+    lockout-duration-minutes: 15
 
 logging:
   level:

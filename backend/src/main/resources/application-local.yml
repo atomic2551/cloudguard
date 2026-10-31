@@ -1,0 +1,4 @@
+cloudguard:
+  cookie:
+    secure: false
+  allowed-origins: "http://localhost:3000"

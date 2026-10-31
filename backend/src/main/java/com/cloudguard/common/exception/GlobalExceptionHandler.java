@@ -40,7 +40,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
     public ResponseEntity<Object> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication failed", request);
+        if (ex instanceof org.springframework.security.authentication.LockedException) {
+            return buildErrorResponse(HttpStatus.LOCKED, "ACCOUNT_LOCKED", ex.getMessage(), request);
+        }
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Invalid username or password", request);
     }
 
     public static ResponseEntity<Object> buildErrorResponse(HttpStatus status, String error, String message, WebRequest request) {

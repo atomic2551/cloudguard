@@ -25,6 +25,19 @@ VALUES
   ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003')
 ON CONFLICT DO NOTHING;
 
+-- 3b. Permissions & Role Permissions
+INSERT INTO permissions (id, resource, action, description)
+VALUES 
+  ('10000000-0000-0000-0000-000000000001', 'alerts', 'read', 'Read alerts permission'),
+  ('10000000-0000-0000-0000-000000000002', 'users', 'read', 'Read users permission')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+VALUES 
+  ('a0000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001'),
+  ('a0000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002')
+ON CONFLICT DO NOTHING;
+
 -- 4. Cloud Accounts
 INSERT INTO cloud_accounts (id, name, provider, account_id, primary_region, status)
 VALUES 
