@@ -55,3 +55,6 @@ backend/target/
 *.log
 backend/startup.log
 backend/*.txt
+
+# local e2e credentials
+.env.e2e
