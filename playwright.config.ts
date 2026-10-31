@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load credentials ONLY from git-ignored .env.e2e at project root
+dotenv.config({ path: path.resolve(__dirname, '.env.e2e') });
 
 export default defineConfig({
   testDir: './e2e',
@@ -21,10 +26,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  webServer: [
+    {
+      command: 'npm run start',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+    {
+      command: process.platform === 'win32'
+        ? '.\\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local'
+        : './mvnw spring-boot:run -Dspring-boot.run.profiles=local',
+      cwd: './backend',
+      url: 'http://localhost:8080/api/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+  ],
 });
