@@ -22,4 +22,12 @@ export const findingsApi = {
   triggerIamScan(cloudAccountId?: string): Promise<{ success: boolean; findingsFound: number }> {
     return httpClient.post<{ success: boolean; findingsFound: number }>('/iam/scan', { cloudAccountId });
   },
+
+  updateSecurityFindingStatus(idOrNumber: string, status: string): Promise<SecurityFindingDto> {
+    return httpClient.patch<SecurityFindingDto>(`/scanner/findings/${idOrNumber}/status`, { status });
+  },
+
+  updateIamFindingStatus(idOrNumber: string, status: string): Promise<IamFindingDto> {
+    return httpClient.patch<IamFindingDto>(`/iam/findings/${idOrNumber}/status`, { status });
+  },
 };
