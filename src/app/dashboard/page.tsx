@@ -15,6 +15,7 @@ import {
 import AppLayout from '@/components/layout/AppLayout';
 import SeverityBadge from '@/components/ui/SeverityBadge';
 import DemoDataBadge from '@/components/ui/DemoDataBadge';
+import { useLanguage } from '@/lib/i18n';
 
 // Local chart defaults (eliminating mock-data dependency)
 const staticIncidentsByCategory = [
@@ -145,6 +146,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
   const [recentAlerts, setRecentAlerts] = useState<AlertDto[]>([]);
   const [recentEvents, setRecentEvents] = useState<SecurityEventDto[]>([]);
@@ -180,19 +182,19 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white">Security Operations Dashboard</h1>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-lg sm:text-xl font-bold text-white">{t('dashboard.title')}</h1>
               <DemoDataBadge />
             </div>
-            <p className="text-gray-500 text-sm mt-0.5">Real-time cloud & host security monitoring — SecLab XDR</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">{t('dashboard.subtitle')}</p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 self-start sm:self-auto">
             <Activity className="w-3.5 h-3.5 text-green-400" />
-            <span>Last sync: <span className="text-gray-400">Just now</span></span>
+            <span>{t('dashboard.last_sync')} <span className="text-gray-300 font-medium">{t('dashboard.just_now')}</span></span>
           </div>
         </div>
 
@@ -205,34 +207,34 @@ export default function DashboardPage() {
         )}
 
         {/* Top metric cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <SecurityScoreRing score={securityScore} categories={summary?.categoryScores} />
-          <div className="grid grid-cols-2 md:grid-cols-4 col-span-1 lg:col-span-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 col-span-1 sm:col-span-1 lg:col-span-4 gap-2.5 sm:gap-4">
             <MetricCard
-              label="Critical Alerts"
+              label={t('dashboard.critical_alerts')}
               value={criticalAlerts ?? '—'}
               icon={AlertTriangle}
               iconColor="bg-red-500/20 text-red-400"
               href="/alerts"
             />
             <MetricCard
-              label="High Alerts"
+              label={t('dashboard.high_alerts')}
               value={highAlerts ?? '—'}
               icon={Bell}
               iconColor="bg-orange-500/20 text-orange-400"
               href="/alerts"
             />
             <MetricCard
-              label="Open Incidents"
+              label={t('dashboard.open_incidents')}
               value={openIncidents ?? '—'}
               icon={Layers}
               iconColor="bg-purple-500/20 text-purple-400"
               href="/incidents"
             />
             <MetricCard
-              label="Security Findings"
+              label={t('nav.findings')}
               value={summary?.metrics?.openFindings ?? '—'}
-              sub="Security scanner findings"
+              sub="Scanner"
               icon={Search}
               iconColor="bg-yellow-500/20 text-yellow-400"
               href="/findings"

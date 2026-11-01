@@ -8,9 +8,11 @@ import SeverityBadge from '@/components/ui/SeverityBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { api, IncidentDto, IncidentStatus, Severity, AlertSeverity } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { useLanguage } from '@/lib/i18n';
 
 export default function IncidentsPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isViewer = user?.roles?.includes('VIEWER') && !user?.roles?.includes('ADMIN') && !user?.roles?.includes('SOC_ANALYST');
 
   const [incidents, setIncidents] = useState<IncidentDto[]>([]);
@@ -101,30 +103,30 @@ export default function IncidentsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-5">
-        <div className="flex items-center justify-between">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white">Incident Management</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              {counts.active} active · {counts.resolved + counts.closed} resolved · {totalElements} total
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{t('incidents.title')}</h1>
+            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+              {counts.active} {t('common.status', 'status').toLowerCase()} · {counts.resolved + counts.closed} {t('status.resolved').toLowerCase()} · {totalElements} {t('common.all').toLowerCase()}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={loadIncidents}
               disabled={loading}
-              className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-gray-300 text-sm px-3 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-gray-800/80 border border-gray-700 text-gray-300 text-xs sm:text-sm px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <span>{t('common.refresh')}</span>
             </button>
             {!isViewer && (
               <button
                 onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-md transition-colors shadow-lg shadow-blue-600/20"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-colors shadow-lg shadow-blue-600/20 font-medium"
               >
                 <Plus className="w-4 h-4" />
-                Create Incident
+                <span>{t('incidents.create')}</span>
               </button>
             )}
           </div>
@@ -208,7 +210,7 @@ export default function IncidentsPage() {
         )}
 
         {/* Status summary */}
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
           {(['OPEN', 'INVESTIGATING', 'CONTAINED', 'RESOLVED', 'CLOSED'] as IncidentStatus[]).map((status) => {
             const count = counts[status.toLowerCase() as keyof typeof counts] ?? 0;
             const colors: Record<IncidentStatus, string> = {
@@ -222,47 +224,49 @@ export default function IncidentsPage() {
               <button
                 key={status}
                 onClick={() => setFilterStatus(filterStatus === status ? 'ALL' : status)}
-                className={`border rounded-lg px-4 py-3 transition-all text-left ${colors[status]} ${filterStatus === status ? 'ring-2 ring-white/20' : ''}`}
+                className={`border rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 transition-all text-left ${colors[status]} ${filterStatus === status ? 'ring-2 ring-white/20' : ''}`}
               >
-                <div className="text-2xl font-bold">{loading ? <span className="inline-block w-8 h-7 bg-gray-700 rounded animate-pulse" /> : count}</div>
-                <div className="text-xs mt-0.5 opacity-80">{status}</div>
+                <div className="text-xl sm:text-2xl font-bold">{loading ? <span className="inline-block w-8 h-7 bg-gray-700 rounded animate-pulse" /> : count}</div>
+                <div className="text-xs mt-0.5 opacity-80 font-medium">{t(`status.${status.toLowerCase()}`, status)}</div>
               </button>
             );
           })}
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48 max-w-sm">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Search incidents by title or category..."
+              placeholder={t('incidents.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-gray-800 text-gray-300 text-sm pl-9 pr-4 py-2 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+              className="w-full bg-gray-800 text-gray-200 text-sm pl-9 pr-4 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 placeholder-gray-500"
             />
           </div>
-          <Filter className="w-4 h-4 text-gray-500" />
-          <select
-            value={filterSeverity}
-            onChange={(e) => setFilterSeverity(e.target.value)}
-            className="bg-gray-800 text-gray-300 text-sm px-3 py-2 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
-          >
-            <option value="ALL">All Severities</option>
-            {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as Severity[]).map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500 hidden sm:block" />
+            <select
+              value={filterSeverity}
+              onChange={(e) => setFilterSeverity(e.target.value)}
+              className="bg-gray-800 text-gray-200 text-sm px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500"
+            >
+              <option value="ALL">{t('common.all')} {t('common.severity')}</option>
+              {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as Severity[]).map((s) => (
+                <option key={s} value={s}>{t(`severity.${s.toLowerCase()}`, s)}</option>
+              ))}
+            </select>
+          </div>
           {(filterSeverity !== 'ALL' || filterStatus !== 'ALL' || search) && (
             <button
               onClick={() => { setFilterSeverity('ALL'); setFilterStatus('ALL'); setSearch(''); }}
-              className="text-blue-400 text-sm hover:underline"
+              className="text-blue-400 text-xs sm:text-sm hover:underline"
             >
-              Clear filters
+              {t('common.cancel')}
             </button>
           )}
-          <span className="text-gray-600 text-sm ml-auto">{totalElements} incidents</span>
+          <span className="text-gray-500 text-xs sm:text-sm ml-auto">{totalElements} {t('nav.incidents').toLowerCase()}</span>
         </div>
 
         {/* Error State */}
@@ -272,22 +276,22 @@ export default function IncidentsPage() {
               <AlertCircle className="w-4 h-4" />
               <span>{error}</span>
             </div>
-            <button onClick={loadIncidents} className="underline hover:text-red-300">Retry</button>
+            <button onClick={loadIncidents} className="underline hover:text-red-300">{t('common.refresh')}</button>
           </div>
         )}
 
         {/* Table */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-800/50 border-b border-gray-800">
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28">Incident #</th>
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3">Title & Category</th>
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24">Severity</th>
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28">Status</th>
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3 hidden md:table-cell w-36">Assigned To</th>
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3 hidden lg:table-cell w-20">Alerts</th>
-                <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3 hidden lg:table-cell w-32">Created</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28">{t('incidents.number')}</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3">{t('incidents.title_category')}</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24">{t('common.severity')}</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28">{t('common.status')}</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3 hidden md:table-cell w-36">{t('incidents.assigned_to')}</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3 hidden lg:table-cell w-20">{t('incidents.alerts_count')}</th>
+                <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-wider px-4 py-3 hidden lg:table-cell w-32">{t('incidents.created_date')}</th>
                 <th className="w-8"></th>
               </tr>
             </thead>

@@ -24,43 +24,46 @@ import {
   FlaskConical,
   Layers,
   X,
+  Globe,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/components/AuthProvider';
+import { useLanguage } from '@/lib/i18n';
 
 const mainNavItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/alerts', label: 'Alerts', icon: Bell },
-  { href: '/incidents', label: 'Incidents', icon: AlertTriangle },
-  { href: '/events', label: 'Security Events', icon: Activity },
+  { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { href: '/alerts', labelKey: 'nav.alerts', icon: Bell },
+  { href: '/incidents', labelKey: 'nav.incidents', icon: AlertTriangle },
+  { href: '/events', labelKey: 'nav.events', icon: Activity },
 ];
 
 const sensorNavItems = [
-  { href: '/hosts', label: 'Hosts & Agents', icon: Server },
-  { href: '/network', label: 'Network IDS', icon: Radio },
-  { href: '/cloud-accounts', label: 'Cloud Accounts', icon: Cloud },
-  { href: '/iam', label: 'IAM Security', icon: Users },
-  { href: '/scanner', label: 'Cloud Scanner', icon: ScanLine },
-  { href: '/findings', label: 'Findings', icon: Search },
+  { href: '/hosts', labelKey: 'nav.hosts', icon: Server },
+  { href: '/network', labelKey: 'nav.network', icon: Radio },
+  { href: '/cloud-accounts', labelKey: 'nav.cloud_accounts', icon: Cloud },
+  { href: '/iam', labelKey: 'nav.iam', icon: Users },
+  { href: '/scanner', labelKey: 'nav.scanner', icon: ScanLine },
+  { href: '/findings', labelKey: 'nav.findings', icon: Search },
 ];
 
 const intelligenceNavItems = [
-  { href: '/mitre', label: 'ATT&CK Heatmap', icon: Zap },
-  { href: '/detection-rules', label: 'Detection Rules', icon: Cpu },
-  { href: '/plugins', label: 'Plugins Control', icon: Layers },
-  { href: '/simulation', label: 'Simulation Lab', icon: FlaskConical },
+  { href: '/mitre', labelKey: 'nav.mitre', icon: Zap },
+  { href: '/detection-rules', labelKey: 'nav.detection_rules', icon: Cpu },
+  { href: '/plugins', labelKey: 'nav.plugins', icon: Layers },
+  { href: '/simulation', labelKey: 'nav.simulation', icon: FlaskConical },
 ];
 
 const adminNavItems = [
-  { href: '/reports', label: 'Reports', icon: FileText },
-  { href: '/audit-logs', label: 'Audit Logs', icon: ScrollText },
-  { href: '/users', label: 'Users & RBAC', icon: Users },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/reports', labelKey: 'nav.reports', icon: FileText },
+  { href: '/audit-logs', labelKey: 'nav.audit_logs', icon: ScrollText },
+  { href: '/users', labelKey: 'nav.users', icon: Users },
+  { href: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
   const initials = user?.displayName
     ? user.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -102,7 +105,7 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
         {/* Main Section */}
         <div>
           <div className="px-2 mb-1.5">
-            <span className="text-gray-600 text-[10px] font-bold uppercase tracking-wider">Operations</span>
+            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">{t('nav.operations')}</span>
           </div>
           {mainNavItems.map((item) => {
             const Icon = item.icon;
@@ -111,15 +114,16 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={clsx(
-                  'flex items-center gap-3 px-3 py-1.5 rounded-md text-xs font-medium transition-colors group mb-0.5',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group mb-0.5 active:bg-gray-800',
                   isActive
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/80'
                 )}
               >
                 <Icon className={clsx('w-4 h-4 flex-shrink-0', isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400')} />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{t(item.labelKey)}</span>
                 {isActive && <ChevronRight className="w-3 h-3 text-blue-400" />}
               </Link>
             );
@@ -129,7 +133,7 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
         {/* Sensors & Assets */}
         <div>
           <div className="px-2 mb-1.5">
-            <span className="text-gray-600 text-[10px] font-bold uppercase tracking-wider">Sensors & Cloud</span>
+            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">{t('nav.sensors')}</span>
           </div>
           {sensorNavItems.map((item) => {
             const Icon = item.icon;
@@ -138,15 +142,16 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={clsx(
-                  'flex items-center gap-3 px-3 py-1.5 rounded-md text-xs font-medium transition-colors group mb-0.5',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group mb-0.5 active:bg-gray-800',
                   isActive
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/80'
                 )}
               >
                 <Icon className={clsx('w-4 h-4 flex-shrink-0', isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400')} />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{t(item.labelKey)}</span>
                 {isActive && <ChevronRight className="w-3 h-3 text-blue-400" />}
               </Link>
             );
@@ -156,7 +161,7 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
         {/* Intelligence & Detection */}
         <div>
           <div className="px-2 mb-1.5">
-            <span className="text-gray-600 text-[10px] font-bold uppercase tracking-wider">Detection & Lab</span>
+            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">{t('nav.detection')}</span>
           </div>
           {intelligenceNavItems.map((item) => {
             const Icon = item.icon;
@@ -165,15 +170,16 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={clsx(
-                  'flex items-center gap-3 px-3 py-1.5 rounded-md text-xs font-medium transition-colors group mb-0.5',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group mb-0.5 active:bg-gray-800',
                   isActive
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/80'
                 )}
               >
                 <Icon className={clsx('w-4 h-4 flex-shrink-0', isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400')} />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{t(item.labelKey)}</span>
                 {isActive && <ChevronRight className="w-3 h-3 text-blue-400" />}
               </Link>
             );
@@ -183,7 +189,7 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
         {/* Admin */}
         <div>
           <div className="px-2 mb-1.5">
-            <span className="text-gray-600 text-[10px] font-bold uppercase tracking-wider">Administration</span>
+            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">{t('nav.admin')}</span>
           </div>
           {adminNavItems.map((item) => {
             const Icon = item.icon;
@@ -192,15 +198,16 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={clsx(
-                  'flex items-center gap-3 px-3 py-1.5 rounded-md text-xs font-medium transition-colors group mb-0.5',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group mb-0.5 active:bg-gray-800',
                   isActive
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30 font-semibold shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/80'
                 )}
               >
                 <Icon className={clsx('w-4 h-4 flex-shrink-0', isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400')} />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{t(item.labelKey)}</span>
                 {isActive && <ChevronRight className="w-3 h-3 text-blue-400" />}
               </Link>
             );
@@ -221,12 +228,34 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
           <button
             onClick={() => logout()}
             className="text-gray-500 hover:text-red-400 transition-colors p-1"
-            title="Sign out"
-            aria-label="Sign out"
+            title={t('nav.logout')}
+            aria-label={t('nav.logout')}
           >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Language switcher pills */}
+        <div className="flex items-center gap-1.5 px-2 mt-2 pt-2 border-t border-gray-800/60">
+          <Globe className="w-3.5 h-3.5 text-gray-500" />
+          <button
+            onClick={() => setLanguage('uz')}
+            className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
+              language === 'uz' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            🇺🇿 O&apos;zbekcha
+          </button>
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
+              language === 'en' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            🇬🇧 English
+          </button>
+        </div>
+
         <div className="flex items-center justify-between mt-2 px-2 text-[10px] text-gray-600">
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
