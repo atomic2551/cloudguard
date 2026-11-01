@@ -72,9 +72,20 @@ export default function ScannerPage() {
     }
   };
 
-  const updateStatus = (id: string, status: FindingStatus) => {
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const updateStatus = async (id: string, status: FindingStatus) => {
     if (isViewer) return;
-    setFindings((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
+    setUpdatingId(id);
+    try {
+      await api.findings.updateSecurityFindingStatus(id, status);
+      await loadFindings();
+    } catch (err: unknown) {
+      console.error('Failed to update finding status:', err);
+      window.alert('Failed to update finding status. Please check your permissions.');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -90,9 +101,9 @@ export default function ScannerPage() {
       high: findings.filter((f) => f.severity === 'HIGH' && f.status === 'OPEN').length,
       medium: findings.filter((f) => f.severity === 'MEDIUM' && f.status === 'OPEN').length,
       low: findings.filter((f) => f.severity === 'LOW' && f.status === 'OPEN').length,
-      resources: 266,
+      resources: findings.length > 0 ? new Set(findings.map((f) => f.resourceId).filter(Boolean)).size : (loading ? '—' : 0),
     };
-  }, [findings]);
+  }, [findings, loading]);
 
   return (
     <AppLayout>
@@ -267,8 +278,8 @@ export default function ScannerPage() {
                       </div>
                       <div>
                         <span className="text-gray-500">Risk Score: </span>
-                        <span className={`font-bold ${(finding.riskScore || 0) >= 90 ? 'text-red-400' : (finding.riskScore || 0) >= 70 ? 'text-orange-400' : 'text-yellow-400'}`}>
-                          {finding.riskScore || 80}/100
+                        <span className={`font-bold ${finding.riskScore == null ? 'text-gray-600' : finding.riskScore >= 90 ? 'text-red-400' : finding.riskScore >= 70 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                          {finding.riskScore !== undefined ? `${finding.riskScore}/100` : 'N/A'}
                         </span>
                       </div>
                     </div>
@@ -284,15 +295,17 @@ export default function ScannerPage() {
                       {finding.status === 'OPEN' && (
                         <button
                           onClick={() => updateStatus(finding.id, 'ACKNOWLEDGED')}
-                          className="text-xs bg-purple-600/15 border border-purple-600/30 text-purple-400 px-3 py-1.5 rounded hover:bg-purple-600/25 transition-colors whitespace-nowrap"
+                          disabled={updatingId === finding.id}
+                          className="text-xs bg-purple-600/15 border border-purple-600/30 text-purple-400 px-3 py-1.5 rounded hover:bg-purple-600/25 disabled:opacity-50 transition-colors whitespace-nowrap"
                         >
-                          Acknowledge
+                          {updatingId === finding.id ? 'Updating...' : 'Acknowledge'}
                         </button>
                       )}
                       {finding.status !== 'REMEDIATED' && finding.status !== 'SUPPRESSED' && (
                         <button
                           onClick={() => updateStatus(finding.id, 'REMEDIATED')}
-                          className="text-xs bg-green-600/15 border border-green-600/30 text-green-400 px-3 py-1.5 rounded hover:bg-green-600/25 transition-colors whitespace-nowrap flex items-center gap-1"
+                          disabled={updatingId === finding.id}
+                          className="text-xs bg-green-600/15 border border-green-600/30 text-green-400 px-3 py-1.5 rounded hover:bg-green-600/25 disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-1"
                         >
                           <CheckCircle2 className="w-3 h-3" />
                           Remediated
@@ -301,7 +314,8 @@ export default function ScannerPage() {
                       {finding.status !== 'SUPPRESSED' && finding.status !== 'REMEDIATED' && (
                         <button
                           onClick={() => updateStatus(finding.id, 'SUPPRESSED')}
-                          className="text-xs bg-gray-700/50 border border-gray-700 text-gray-500 px-3 py-1.5 rounded hover:bg-gray-700 transition-colors whitespace-nowrap flex items-center gap-1"
+                          disabled={updatingId === finding.id}
+                          className="text-xs bg-gray-700/50 border border-gray-700 text-gray-500 px-3 py-1.5 rounded hover:bg-gray-700 disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-1"
                         >
                           <XCircle className="w-3 h-3" />
                           Suppress

@@ -5,6 +5,7 @@ import { Users, Shield, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Search,
 import AppLayout from '@/components/layout/AppLayout';
 import SeverityBadge from '@/components/ui/SeverityBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 import { api, IamFindingDto, FindingStatus, Severity } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -79,13 +80,24 @@ export default function IAMPage() {
     }
   };
 
-  const updateFindingStatus = (id: string, status: FindingStatus) => {
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const updateFindingStatus = async (id: string, status: FindingStatus) => {
     if (isViewer) return;
-    setFindings((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
+    setUpdatingId(id);
+    try {
+      await api.findings.updateIamFindingStatus(id, status);
+      await loadIamFindings();
+    } catch (err: unknown) {
+      console.error('Failed to update IAM finding status:', err);
+      window.alert('Failed to update IAM finding status. Please check your permissions.');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
-  const iamScore = 74;
-  const scoreColor = iamScore >= 80 ? 'text-green-400' : iamScore >= 60 ? 'text-yellow-400' : 'text-red-400';
+  const iamScore = findings.length > 0 ? Math.max(0, 100 - findings.filter((f) => f.status === 'OPEN').length * 10) : null;
+  const scoreColor = iamScore === null ? 'text-gray-500' : iamScore >= 80 ? 'text-green-400' : iamScore >= 60 ? 'text-yellow-400' : 'text-red-400';
 
   const filteredFindings = useMemo(() => {
     return findings;
@@ -97,8 +109,11 @@ export default function IAMPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">IAM Security Auditor & Principal Hygiene</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">IAM Security Auditor & Principal Hygiene</h1>
+              <DemoDataBadge tooltip="Principals list is simulated; findings stream is live from backend" />
+            </div>
+            <p className="text-gray-400 text-sm mt-0.5">
               AWS Identity & Access Management security posture and excessive privilege scanner
             </p>
           </div>
@@ -117,16 +132,19 @@ export default function IAMPage() {
         {/* Score + summary */}
         <div className="grid grid-cols-5 gap-4">
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 col-span-1">
-            <div className="text-gray-500 text-xs mb-2">IAM Posture Score</div>
-            <div className={`text-4xl font-bold ${scoreColor}`}>{iamScore}</div>
-            <div className="text-gray-600 text-xs mt-1">/100 (CIS AWS 1.x)</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-gray-400 text-xs font-medium">IAM Posture Score</span>
+              <span className="text-[10px] text-amber-400 font-mono">ESTIMATED</span>
+            </div>
+            <div className={`text-4xl font-bold ${scoreColor}`}>{iamScore !== null ? iamScore : '—'}</div>
+            <div className="text-gray-500 text-xs mt-1">/100 (Client-side calculated)</div>
             <div className="mt-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${iamScore >= 80 ? 'bg-green-500' : iamScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                style={{ width: `${iamScore}%` }}
+                className={`h-full rounded-full ${iamScore === null ? 'bg-gray-700' : iamScore >= 80 ? 'bg-green-500' : iamScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                style={{ width: `${iamScore !== null ? iamScore : 0}%` }}
               />
             </div>
-            <div className="text-gray-600 text-xs mt-2">Last scan: {new Date(lastScan).toLocaleTimeString()}</div>
+            <div className="text-gray-500 text-xs mt-2">Last scan: {new Date(lastScan).toLocaleTimeString()}</div>
           </div>
           {[
             { label: 'Total IAM Users', value: staticIamUsers.filter((u) => u.type === 'User').length, icon: Users, color: 'text-blue-400' },
@@ -147,8 +165,11 @@ export default function IAMPage() {
         {/* IAM Users table */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-            <h2 className="text-gray-300 text-sm font-semibold">Audited Principals & Service Roles</h2>
-            <span className="text-gray-600 text-xs">{staticIamUsers.length} principals</span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-gray-300 text-sm font-semibold">Audited Principals & Service Roles</h2>
+              <DemoDataBadge tooltip="Simulated principal directory" />
+            </div>
+            <span className="text-gray-500 text-xs">{staticIamUsers.length} principals</span>
           </div>
           <table className="w-full">
             <thead>
@@ -316,17 +337,19 @@ export default function IAMPage() {
                         {finding.status === 'OPEN' && (
                           <button
                             onClick={() => updateFindingStatus(finding.id, 'ACKNOWLEDGED')}
-                            className="text-xs bg-purple-600/20 border border-purple-600/40 text-purple-400 px-3 py-1 rounded hover:bg-purple-600/30 transition-colors"
+                            disabled={updatingId === finding.id}
+                            className="text-xs bg-purple-600/20 border border-purple-600/40 text-purple-400 px-3 py-1 rounded hover:bg-purple-600/30 disabled:opacity-50 transition-colors"
                           >
-                            Acknowledge
+                            {updatingId === finding.id ? 'Updating...' : 'Acknowledge'}
                           </button>
                         )}
                         {finding.status !== 'REMEDIATED' && (
                           <button
                             onClick={() => updateFindingStatus(finding.id, 'REMEDIATED')}
-                            className="text-xs bg-green-600/20 border border-green-600/40 text-green-400 px-3 py-1 rounded hover:bg-green-600/30 transition-colors"
+                            disabled={updatingId === finding.id}
+                            className="text-xs bg-green-600/20 border border-green-600/40 text-green-400 px-3 py-1 rounded hover:bg-green-600/30 disabled:opacity-50 transition-colors"
                           >
-                            Mark Remediated
+                            {updatingId === finding.id ? 'Updating...' : 'Mark Remediated'}
                           </button>
                         )}
                       </div>

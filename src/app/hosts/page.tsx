@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Server, Shield, CheckCircle2, AlertTriangle, RefreshCw, Activity, Terminal, Lock } from 'lucide-react';
+import { Server, Shield, CheckCircle2, RefreshCw, Activity, Lock } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 
 interface HostAgent {
   id: string;
@@ -61,21 +62,27 @@ const mockAgents: HostAgent[] = [
 ];
 
 export default function HostsAgentsPage() {
-  const [agents, setAgents] = useState(mockAgents);
+  const [agents] = useState(mockAgents);
   const [syncing, setSyncing] = useState(false);
 
   const handleRefresh = () => {
     setSyncing(true);
-    setTimeout(() => setSyncing(false), 800);
+    setTimeout(() => setSyncing(false), 600);
   };
+
+  const fimCount = agents.filter((a) => a.modules.fim).length;
+  const totalEvents = agents.reduce((acc, a) => acc + a.events24h, 0);
 
   return (
     <AppLayout>
       <div className="p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Connected Host Sensors & mTLS Agents</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">Connected Host Sensors & mTLS Agents</h1>
+              <DemoDataBadge tooltip="Simulated endpoint sensors" />
+            </div>
+            <p className="text-gray-400 text-sm mt-0.5">
               Lightweight endpoint agents collecting process executions, FIM SHA-256 hashes, and packet telemetry
             </p>
           </div>
@@ -89,16 +96,22 @@ export default function HostsAgentsPage() {
           </button>
         </div>
 
+        {/* Demo banner */}
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-400 flex items-center justify-between">
+          <span>Demonstration telemetry: Host sensors and mTLS client certificates shown below are simulated.</span>
+          <span className="font-mono text-[11px] opacity-80">AGENT ENGINE v1.4.2</span>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4">
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
               <Server className="w-4 h-4 text-blue-400" /> Total Registered Hosts
             </div>
             <div className="text-2xl font-bold text-white">{agents.length}</div>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
               <CheckCircle2 className="w-4 h-4 text-green-400" /> Healthy mTLS Sessions
             </div>
             <div className="text-2xl font-bold text-green-400">
@@ -106,16 +119,16 @@ export default function HostsAgentsPage() {
             </div>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
               <Shield className="w-4 h-4 text-purple-400" /> Active FIM Baselines
             </div>
-            <div className="text-2xl font-bold text-purple-400">2 Hosts</div>
+            <div className="text-2xl font-bold text-purple-400">{fimCount} Hosts</div>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
               <Activity className="w-4 h-4 text-cyan-400" /> Total Ingested Events (24h)
             </div>
-            <div className="text-2xl font-bold text-cyan-400">2,622</div>
+            <div className="text-2xl font-bold text-cyan-400">{totalEvents.toLocaleString()}</div>
           </div>
         </div>
 

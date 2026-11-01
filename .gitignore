@@ -19,6 +19,9 @@ playwright-report/
 .DS_Store
 *.pem
 .venv/
+__pycache__/
+*.pyc
+.pytest_cache/
 
 # Debug
 npm-debug.log*
@@ -52,3 +55,6 @@ backend/target/
 *.log
 backend/startup.log
 backend/*.txt
+
+# local e2e credentials
+.env.e2e

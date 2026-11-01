@@ -51,6 +51,17 @@ public class AlertController {
         return ResponseEntity.ok(ApiResponse.success(comments));
     }
 
+    @PostMapping("/{idOrNumber}/comments")
+    @PreAuthorize("hasAuthority('alerts:write')")
+    public ResponseEntity<Map<String, AlertCommentDto>> addAlertComment(
+            @PathVariable String idOrNumber,
+            @Valid @RequestBody com.cloudguard.alert.dto.CreateAlertCommentDto dto,
+            Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "System";
+        AlertCommentDto comment = alertService.addAlertComment(idOrNumber, dto.getContent(), username);
+        return ResponseEntity.ok(ApiResponse.success(comment));
+    }
+
     @GetMapping("/{idOrNumber}/timeline")
     @PreAuthorize("hasAuthority('alerts:read')")
     public ResponseEntity<Map<String, List<AlertTimelineDto>>> getAlertTimeline(@PathVariable String idOrNumber) {

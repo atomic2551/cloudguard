@@ -1,41 +1,50 @@
-version: '3.8'
-
 services:
   # 1. PostgreSQL Database (Storage for events, alerts, incidents, audit logs)
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: cloudguard-postgres
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-cloudguard_db}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      FLYWAY_USER: ${FLYWAY_USER:?set FLYWAY_USER in .env}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD:?set FLYWAY_PASSWORD in .env}
+      DB_USER: ${DB_USER:?set DB_USER in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:?set POSTGRES_PORT in .env}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/docker/init-roles.sh:/docker-entrypoint-initdb.d/init-roles.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-cloudguard_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - seclab-network
 
-  # 2. Redis Streams (SecLab XDR Central Event Bus)
-  redis:
-    image: redis:7-alpine
-    container_name: seclab-redis-bus
+  # 2. Spring Boot Backend (Single API Authority: Auth, RBAC, Data Services)
+  backend:
+    build: ./backend
+    container_name: cloudguard-backend
     restart: always
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      # Bound to 127.0.0.1 loopback only to avoid exposing container directly on public network
+      - "127.0.0.1:8080:8080"
+    environment:
+      # Target container host 'postgres' inside compose network rather than host localhost
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
+      DB_USER: ${DB_USER:?set DB_USER in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
+      FLYWAY_USER: ${FLYWAY_USER:?set FLYWAY_USER in .env}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD:?set FLYWAY_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - seclab-network
 
@@ -50,15 +59,11 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      # In-cluster or external FastAPI backend URL:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cloudguard_db}
-      - JWT_SECRET=${JWT_SECRET:-cloudguard-soc-dev-secret-change-in-production-32chars}
+      - BACKEND_URL=http://backend:8080
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env}
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      backend:
+        condition: service_started
     networks:
       - seclab-network
 
@@ -68,4 +73,4 @@ networks:
 
 volumes:
   postgres_data:
-  redis_data:
+

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bell, Search, Cloud, ChevronDown, AlertCircle, X, LogOut } from 'lucide-react';
+import { Bell, Search, Cloud, ChevronDown, AlertCircle, X, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const notifications = [
@@ -12,7 +12,7 @@ const notifications = [
   { id: '4', text: 'Incident INC-002 status updated', time: '1h ago', severity: 'INFO' },
 ];
 
-export default function TopBar({ title }: { title?: string }) {
+export default function TopBar({ title, onMenuToggle }: { title?: string; onMenuToggle?: () => void }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -24,23 +24,32 @@ export default function TopBar({ title }: { title?: string }) {
     : 'SC';
 
   return (
-    <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 sticky top-0 z-30">
-      {/* Left: title or search */}
+    <header className="h-14 flex-shrink-0 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 sticky top-0 z-30" role="banner">
+      {/* Left: hamburger + title + search */}
       <div className="flex items-center gap-4 flex-1">
+        <button
+          onClick={onMenuToggle}
+          className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-md transition-colors lg:hidden"
+          aria-label="Toggle sidebar menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         {title && (
           <h1 className="text-white font-semibold text-base">{title}</h1>
         )}
         <div className="relative max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
+            id="topbar-search"
             type="text"
             placeholder="Search alerts, incidents, events..."
+            aria-label="Search alerts, incidents, events"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             className="w-full bg-gray-800 text-gray-300 text-sm pl-9 pr-4 py-1.5 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500 placeholder-gray-600"
           />
           {searchValue && (
-            <button onClick={() => setSearchValue('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <button onClick={() => setSearchValue('')} className="absolute right-3 top-1/2 -translate-y-1/2" aria-label="Clear search">
               <X className="w-3 h-3 text-gray-500" />
             </button>
           )}
@@ -70,6 +79,7 @@ export default function TopBar({ title }: { title?: string }) {
           <button
             onClick={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); }}
             className="relative p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-md transition-colors"
+            aria-label="View notifications"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
@@ -118,6 +128,7 @@ export default function TopBar({ title }: { title?: string }) {
           <button
             onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); }}
             className="flex items-center gap-2 hover:bg-gray-800 rounded-md px-2 py-1.5 transition-colors"
+            aria-label="Open user menu"
           >
             <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
               <span className="text-white text-xs font-bold">{initials}</span>

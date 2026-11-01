@@ -224,7 +224,7 @@ export default function IncidentsPage() {
                 onClick={() => setFilterStatus(filterStatus === status ? 'ALL' : status)}
                 className={`border rounded-lg px-4 py-3 transition-all text-left ${colors[status]} ${filterStatus === status ? 'ring-2 ring-white/20' : ''}`}
               >
-                <div className="text-2xl font-bold">{count}</div>
+                <div className="text-2xl font-bold">{loading ? <span className="inline-block w-8 h-7 bg-gray-700 rounded animate-pulse" /> : count}</div>
                 <div className="text-xs mt-0.5 opacity-80">{status}</div>
               </button>
             );
@@ -338,7 +338,7 @@ export default function IncidentsPage() {
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="text-gray-400 text-xs bg-gray-800 px-2 py-0.5 rounded border border-gray-700">
-                          {inc.alertCount ?? 0}
+                          {inc.alertCount ?? '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">

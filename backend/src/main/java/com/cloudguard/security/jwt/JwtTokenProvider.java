@@ -27,6 +27,16 @@ public class JwtTokenProvider {
     @Value("${cloudguard.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
+    @jakarta.annotation.PostConstruct
+    public void validateSecret() {
+        if (jwtSecret == null || jwtSecret.trim().length() < 48) {
+            throw new IllegalArgumentException(
+                    "JWT secret must be configured and at least 48 characters long. Current length: "
+                            + (jwtSecret == null ? 0 : jwtSecret.trim().length()));
+        }
+        key();
+    }
+
     private SecretKey key() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }

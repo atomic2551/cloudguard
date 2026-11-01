@@ -36,6 +36,18 @@ function buildQueryString(params?: QueryParams): string {
   return queryString ? `?${queryString}` : '';
 }
 
+/**
+ * Checks whether an object matches com.cloudguard.common.response.ApiResponse.
+ * ApiResponse.success(data) returns a Map containing strictly a single "data" key.
+ */
+function isBackendApiResponse<T>(obj: unknown): obj is { data: T } {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return false;
+  }
+  const keys = Object.keys(obj);
+  return keys.length === 1 && keys[0] === 'data';
+}
+
 async function handleResponse<T>(response: Response, endpoint: string): Promise<T> {
   const contentType = response.headers.get('content-type');
   const isJson = contentType && contentType.includes('application/json');
@@ -60,20 +72,57 @@ async function handleResponse<T>(response: Response, endpoint: string): Promise<
     );
   }
 
-  if (response.status === 24 || response.status === 205) {
+  if (response.status === 204 || response.status === 205) {
     return {} as T;
   }
 
   if (isJson) {
-    const json: ApiResponse<T> | T = await response.json();
-    // Support both wrapped ApiResponse<T> and direct DTO responses
-    if (json && typeof json === 'object' && 'data' in json && 'success' in json) {
-      return (json as ApiResponse<T>).data;
+    const json: unknown = await response.json();
+    if (isBackendApiResponse<T>(json)) {
+      return json.data;
     }
     return json as T;
   }
 
   return (await response.text()) as unknown as T;
+}
+
+function getXsrfToken(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function ensureXsrfToken(): Promise<string | null> {
+  let token = getXsrfToken();
+  if (!token && typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/csrf`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => null);
+        token = getXsrfToken() || body?.csrfToken || null;
+      }
+    } catch {
+      // ignore network errors during csrf bootstrap
+    }
+  }
+  return token;
+}
+
+async function getMutatingHeaders(headers?: Record<string, string>): Promise<Record<string, string>> {
+  const merged: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...headers,
+  };
+  const xsrf = await ensureXsrfToken();
+  if (xsrf) {
+    merged['X-XSRF-TOKEN'] = xsrf;
+  }
+  return merged;
 }
 
 export const httpClient = {
@@ -85,6 +134,7 @@ export const httpClient = {
         'Content-Type': 'application/json',
         ...headers,
       },
+      credentials: 'same-origin',
       cache: 'no-store',
     });
     return handleResponse<T>(response, endpoint);
@@ -92,12 +142,23 @@ export const httpClient = {
 
   async post<T>(endpoint: string, body?: any, headers?: Record<string, string>): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
+    const mutatingHeaders = await getMutatingHeaders(headers);
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
+      headers: mutatingHeaders,
+      credentials: 'same-origin',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return handleResponse<T>(response, endpoint);
+  },
+
+  async put<T>(endpoint: string, body?: any, headers?: Record<string, string>): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const mutatingHeaders = await getMutatingHeaders(headers);
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: mutatingHeaders,
+      credentials: 'same-origin',
       body: body ? JSON.stringify(body) : undefined,
     });
     return handleResponse<T>(response, endpoint);
@@ -105,12 +166,11 @@ export const httpClient = {
 
   async patch<T>(endpoint: string, body?: any, headers?: Record<string, string>): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
+    const mutatingHeaders = await getMutatingHeaders(headers);
     const response = await fetch(url, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
+      headers: mutatingHeaders,
+      credentials: 'same-origin',
       body: body ? JSON.stringify(body) : undefined,
     });
     return handleResponse<T>(response, endpoint);
@@ -118,12 +178,11 @@ export const httpClient = {
 
   async delete<T>(endpoint: string, headers?: Record<string, string>): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
+    const mutatingHeaders = await getMutatingHeaders(headers);
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
+      headers: mutatingHeaders,
+      credentials: 'same-origin',
     });
     return handleResponse<T>(response, endpoint);
   },

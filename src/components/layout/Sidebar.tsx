@@ -23,14 +23,15 @@ import {
   Zap,
   FlaskConical,
   Layers,
+  X,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/components/AuthProvider';
 
 const mainNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/alerts', label: 'Alerts', icon: Bell, badge: 16 },
-  { href: '/incidents', label: 'Incidents', icon: AlertTriangle, badge: 2 },
+  { href: '/alerts', label: 'Alerts', icon: Bell },
+  { href: '/incidents', label: 'Incidents', icon: AlertTriangle },
   { href: '/events', label: 'Security Events', icon: Activity },
 ];
 
@@ -57,7 +58,7 @@ const adminNavItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -66,20 +67,38 @@ export default function Sidebar() {
     : 'SC';
 
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col h-screen fixed left-0 top-0 z-40">
+    <aside
+      aria-label="Main navigation"
+      className={clsx(
+        'w-64 bg-gray-900 border-r border-gray-800 flex flex-col h-screen flex-shrink-0 z-50 lg:z-auto transition-transform duration-200',
+        'fixed lg:static left-0 top-0',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      )}
+    >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-800">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/30">
-          <Shield className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/30">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="text-white font-bold text-sm tracking-wider">SECLAB XDR</div>
+            <div className="text-gray-500 text-xs">CloudGuard SOC Platform</div>
+          </div>
         </div>
-        <div>
-          <div className="text-white font-bold text-sm tracking-wider">SECLAB XDR</div>
-          <div className="text-gray-500 text-xs">CloudGuard SOC Platform</div>
-        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-white rounded-md hover:bg-gray-800 lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-4">
+      <nav aria-label="Sidebar navigation" className="flex-1 overflow-y-auto py-2 px-2 space-y-4">
         {/* Main Section */}
         <div>
           <div className="px-2 mb-1.5">
@@ -101,14 +120,6 @@ export default function Sidebar() {
               >
                 <Icon className={clsx('w-4 h-4 flex-shrink-0', isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400')} />
                 <span className="flex-1">{item.label}</span>
-                {item.badge && (
-                  <span className={clsx(
-                    'text-[10px] px-1.5 py-0.2 rounded-full font-bold',
-                    item.href === '/alerts' ? 'bg-red-500/20 text-red-400' : 'bg-purple-500/20 text-purple-400'
-                  )}>
-                    {item.badge}
-                  </span>
-                )}
                 {isActive && <ChevronRight className="w-3 h-3 text-blue-400" />}
               </Link>
             );
@@ -211,6 +222,7 @@ export default function Sidebar() {
             onClick={() => logout()}
             className="text-gray-500 hover:text-red-400 transition-colors p-1"
             title="Sign out"
+            aria-label="Sign out"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -220,7 +232,7 @@ export default function Sidebar() {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
             Event Bus Live
           </span>
-          <span className="font-mono">v1.4.2</span>
+          <span className="font-mono">SecLab XDR</span>
         </div>
       </div>
     </aside>

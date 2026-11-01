@@ -238,7 +238,7 @@ export default function DetectionRulesPage() {
                     <div className="flex items-center gap-4 text-xs text-gray-600">
                       <div className="flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3 text-orange-400" />
-                        <span className="text-orange-400 font-medium">{rule.alertCount || 0}</span>
+                        <span className="text-orange-400 font-medium">{rule.alertCount ?? '—'}</span>
                         <span>alerts triggered</span>
                       </div>
                       {rule.lastTriggeredAt && (

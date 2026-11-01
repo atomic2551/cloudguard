@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import SeverityBadge from '@/components/ui/SeverityBadge';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 
 // Local chart defaults (eliminating mock-data dependency)
 const staticIncidentsByCategory = [
@@ -69,17 +70,19 @@ function MetricCard({
   return content;
 }
 
-function SecurityScoreRing({ score, categories }: { score: number; categories?: Record<string, number> }) {
+function SecurityScoreRing({ score, categories }: { score: number | null; categories?: Record<string, number> }) {
+  const hasScore = score !== null && score !== undefined;
+  const displayScore = hasScore ? score : 0;
   const circumference = 2 * Math.PI * 54;
-  const dashOffset = circumference - (score / 100) * circumference;
-  const color = score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : '#ef4444';
+  const dashOffset = circumference - (displayScore / 100) * circumference;
+  const color = !hasScore ? '#4b5563' : score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : '#ef4444';
 
-  const defaultCats = {
-    IAM: categories?.iam ?? 74,
-    Network: categories?.network ?? 68,
-    Storage: categories?.storage ?? 88,
-    Logging: categories?.logging ?? 92,
-    Compute: categories?.compute ?? 80,
+  const defaultCats: Record<string, number | null> = {
+    IAM: categories?.iam ?? null,
+    Network: categories?.network ?? null,
+    Storage: categories?.storage ?? null,
+    Logging: categories?.logging ?? null,
+    Compute: categories?.compute ?? null,
   };
 
   return (
@@ -99,7 +102,7 @@ function SecurityScoreRing({ score, categories }: { score: number; categories?: 
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-white">{score}</span>
+            <span className="text-2xl font-bold text-white">{hasScore ? score : '—'}</span>
             <span className="text-gray-500 text-xs">/100</span>
           </div>
         </div>
@@ -108,14 +111,14 @@ function SecurityScoreRing({ score, categories }: { score: number; categories?: 
             <div key={cat}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-gray-400 text-xs">{cat}</span>
-                <span className={`text-xs font-bold ${val >= 80 ? 'text-green-400' : val >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {val}%
+                <span className={`text-xs font-bold ${val === null ? 'text-gray-600' : val >= 80 ? 'text-green-400' : val >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {val !== null ? `${val}%` : '—'}
                 </span>
               </div>
               <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${val >= 80 ? 'bg-green-500' : val >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                  style={{ width: `${val}%` }}
+                  className={`h-full rounded-full ${val === null ? 'bg-gray-700' : val >= 80 ? 'bg-green-500' : val >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  style={{ width: val !== null ? `${val}%` : '0%' }}
                 />
               </div>
             </div>
@@ -167,27 +170,13 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  const criticalAlerts = summary?.metrics?.criticalAlerts ?? recentAlerts.filter((a) => a.severity === 'CRITICAL').length;
-  const highAlerts = summary?.metrics?.highAlerts ?? recentAlerts.filter((a) => a.severity === 'HIGH').length;
-  const openIncidents = summary?.metrics?.openIncidents ?? 2;
-  const securityScore = summary?.overallSecurityScore ?? 84;
+  const criticalAlerts = summary?.metrics?.criticalAlerts ?? null;
+  const highAlerts = summary?.metrics?.highAlerts ?? null;
+  const openIncidents = summary?.metrics?.openIncidents ?? null;
+  const securityScore = summary?.overallSecurityScore ?? null;
 
-  const trendData = summary?.alertsTrend || [
-    { date: 'Oct 20', critical: 1, high: 2, medium: 3, low: 4 },
-    { date: 'Oct 21', critical: 2, high: 3, medium: 2, low: 5 },
-    { date: 'Oct 22', critical: 0, high: 1, medium: 4, low: 3 },
-    { date: 'Oct 23', critical: 3, high: 4, medium: 1, low: 6 },
-    { date: 'Oct 24', critical: 1, high: 2, medium: 3, low: 4 },
-    { date: 'Oct 25', critical: 4, high: 5, medium: 2, low: 5 },
-    { date: 'Oct 26', critical: 2, high: 3, medium: 4, low: 2 },
-  ];
-
-  const distribution = summary?.severityDistribution || [
-    { name: 'Critical', value: 4, color: '#ef4444' },
-    { name: 'High', value: 7, color: '#f97316' },
-    { name: 'Medium', value: 12, color: '#eab308' },
-    { name: 'Low', value: 18, color: '#22c55e' },
-  ];
+  const trendData = summary?.alertsTrend || [];
+  const distribution = summary?.severityDistribution || [];
 
   return (
     <AppLayout>
@@ -195,7 +184,10 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Security Operations Dashboard</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">Security Operations Dashboard</h1>
+              <DemoDataBadge />
+            </div>
             <p className="text-gray-500 text-sm mt-0.5">Real-time cloud & host security monitoring — SecLab XDR</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -204,40 +196,42 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Data unavailable */}
+        {!loading && !summary && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-400 text-sm">Data unavailable — backend summary could not be loaded. Metrics display dashes until data is available.</span>
+          </div>
+        )}
+
         {/* Top metric cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <SecurityScoreRing score={securityScore} categories={summary?.categoryScores} />
-          <div className="grid grid-cols-2 col-span-1 lg:col-span-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 col-span-1 lg:col-span-4 gap-4">
             <MetricCard
               label="Critical Alerts"
-              value={criticalAlerts}
+              value={criticalAlerts ?? '—'}
               icon={AlertTriangle}
               iconColor="bg-red-500/20 text-red-400"
-              trend="up"
-              trendLabel="+2 today"
               href="/alerts"
             />
             <MetricCard
               label="High Alerts"
-              value={highAlerts}
+              value={highAlerts ?? '—'}
               icon={Bell}
               iconColor="bg-orange-500/20 text-orange-400"
-              trend="up"
-              trendLabel="+3 today"
               href="/alerts"
             />
             <MetricCard
               label="Open Incidents"
-              value={openIncidents}
+              value={openIncidents ?? '—'}
               icon={Layers}
               iconColor="bg-purple-500/20 text-purple-400"
-              trend="up"
-              trendLabel="+1 today"
               href="/incidents"
             />
             <MetricCard
               label="Security Findings"
-              value={summary?.metrics?.openFindings ?? 23}
+              value={summary?.metrics?.openFindings ?? '—'}
               sub="Security scanner findings"
               icon={Search}
               iconColor="bg-yellow-500/20 text-yellow-400"
@@ -245,36 +239,35 @@ export default function DashboardPage() {
             />
             <MetricCard
               label="Connected Hosts / Accounts"
-              value={summary?.metrics?.activeCloudAccounts ?? 3}
+              value={summary?.metrics?.activeCloudAccounts ?? '—'}
               sub="Monitored in scope.yaml"
               icon={Wifi}
               iconColor="bg-blue-500/20 text-blue-400"
               href="/cloud-accounts"
             />
             <MetricCard
-              label="Pipeline Events (24h)"
-              value={summary?.metrics?.totalAlerts ? summary.metrics.totalAlerts * 12 : 156}
-              sub="Normalized & enriched"
+              label="Total Alerts"
+              value={summary?.metrics?.totalAlerts ?? '—'}
+              sub="All telemetry sources"
               icon={Activity}
               iconColor="bg-cyan-500/20 text-cyan-400"
-              href="/events"
+              href="/alerts"
             />
             <MetricCard
-              label="Active Detection Rules"
-              value={12}
-              sub="Sigma & ATT&CK mapped"
+              label="Critical Findings"
+              value={summary?.metrics?.criticalFindings ?? '—'}
+              sub="Immediate remediation"
               icon={Shield}
-              iconColor="bg-green-500/20 text-green-400"
-              href="/detection-rules"
+              iconColor="bg-red-500/20 text-red-400"
+              href="/findings"
             />
             <MetricCard
-              label="Resolved Today"
-              value={5}
-              sub="Auto-closed / verified"
+              label="Investigating Incidents"
+              value={summary?.metrics?.investigatingIncidents ?? '—'}
+              sub="Active triage"
               icon={CheckCircle2}
               iconColor="bg-teal-500/20 text-teal-400"
-              trend="down"
-              trendLabel="Optimal"
+              href="/incidents"
             />
           </div>
         </div>
@@ -359,7 +352,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-gray-200 text-sm font-semibold">Incidents by Attack Category</h2>
-                <p className="text-gray-600 text-xs mt-0.5">Correlated security incidents</p>
+                <p className="text-gray-600 text-xs mt-0.5">Correlated security incidents · <span className="text-amber-500">Static demo series</span></p>
               </div>
               <Link href="/incidents" className="text-blue-400 text-xs hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
@@ -381,11 +374,8 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-gray-200 text-sm font-semibold">Security Posture Score History</h2>
-                <p className="text-gray-600 text-xs mt-0.5">Weekly compliance trend</p>
+                <p className="text-gray-600 text-xs mt-0.5">Weekly compliance trend · <span className="text-amber-500">Static demo series</span></p>
               </div>
-              <span className="text-green-400 text-xs font-medium flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +6 pts
-              </span>
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={staticSecurityScoreHistory} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { AuthUserDto } from '@/lib/api/types';
+import { authApi } from '@/lib/api/auth';
 
 interface AuthContextType {
   user: AuthUserDto | null;
@@ -23,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me', { cache: 'no-store' });
+      const res = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' });
       if (res.ok) {
         const data = await res.json();
         setUser(data.data ?? data);
@@ -42,7 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await authApi.logout();
+    } catch {
+      // In case server fails, still clean up client state
+    }
     setUser(null);
     window.location.href = '/login';
   }, []);

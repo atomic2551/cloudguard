@@ -1,0 +1,5 @@
+# CloudGuard Python modules - pinned production dependencies
+boto3==1.38.30
+pyyaml==6.0.3
+# Test dependencies
+pytest==9.0.3
