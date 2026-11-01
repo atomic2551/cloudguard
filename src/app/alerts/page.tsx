@@ -7,11 +7,13 @@ import AppLayout from '@/components/layout/AppLayout';
 import SeverityBadge from '@/components/ui/SeverityBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { api, AlertDto, AlertStatus, Severity } from '@/lib/api';
+import { useLanguage } from '@/lib/i18n';
 
 const severities: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 const statuses: AlertStatus[] = ['NEW', 'ACKNOWLEDGED', 'INVESTIGATING', 'RESOLVED', 'FALSE_POSITIVE'];
 
 export default function AlertsPage() {
+  const { t } = useLanguage();
   const [alerts, setAlerts] = useState<AlertDto[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -67,60 +69,59 @@ export default function AlertsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-5">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white">Security Alerts</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              {counts.critical} critical · {counts.high} high priority · {totalElements} total loaded
+            <h1 className="text-lg sm:text-xl font-bold text-white">{t('nav.alerts')}</h1>
+            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+              {counts.critical} {t('topbar.critical').toLowerCase()} · {counts.high} {t('severity.high').toLowerCase()} · {totalElements} ta umumiy
             </p>
           </div>
           <button
             onClick={loadAlerts}
             disabled={loading}
-            className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-gray-300 text-sm px-3 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
+            className="self-start sm:self-auto flex items-center gap-2 bg-gray-800 border border-gray-700 hover:border-gray-600 text-gray-200 text-xs sm:text-sm px-3.5 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 active:bg-gray-700"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {t('common.refresh')}
           </button>
         </div>
 
-        {/* Summary bar */}
-        <div className="grid grid-cols-5 gap-3">
+        {/* Summary bar - responsive grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {[
-            { label: 'New', count: counts.new, color: 'border-blue-500/50 bg-blue-500/5 text-blue-400' },
-            { label: 'Investigating', count: counts.investigating, color: 'border-yellow-500/50 bg-yellow-500/5 text-yellow-400' },
-            { label: 'Acknowledged', count: counts.acknowledged, color: 'border-purple-500/50 bg-purple-500/5 text-purple-400' },
-            { label: 'Resolved', count: counts.resolved, color: 'border-green-500/50 bg-green-500/5 text-green-400' },
-            { label: 'False Positive', count: counts.falsePositive, color: 'border-gray-600/50 bg-gray-600/5 text-gray-400' },
+            { label: t('status.new'), count: counts.new, color: 'border-blue-500/40 bg-blue-500/10 text-blue-400' },
+            { label: t('status.investigating'), count: counts.investigating, color: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400' },
+            { label: t('status.acknowledged'), count: counts.acknowledged, color: 'border-purple-500/40 bg-purple-500/10 text-purple-400' },
+            { label: t('status.resolved'), count: counts.resolved, color: 'border-green-500/40 bg-green-500/10 text-green-400' },
+            { label: t('status.false_positive'), count: counts.falsePositive, color: 'border-gray-600/40 bg-gray-600/10 text-gray-400' },
           ].map(({ label, count, color }) => (
-            <div key={label} className={`border rounded-lg px-4 py-3 ${color}`}>
-              <div className="text-2xl font-bold">{count}</div>
-              <div className="text-xs mt-0.5 opacity-80">{label}</div>
+            <div key={label} className={`border rounded-xl p-3 sm:px-4 sm:py-3 transition-transform hover:-translate-y-0.5 ${color}`}>
+              <div className="text-xl sm:text-2xl font-bold">{count}</div>
+              <div className="text-[11px] sm:text-xs mt-0.5 opacity-90 truncate">{label}</div>
             </div>
           ))}
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48 max-w-sm">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Search alerts by title, source IP, ID..."
+              placeholder={t('common.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-gray-800 text-gray-300 text-sm pl-9 pr-4 py-2 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+              className="w-full bg-gray-800/90 text-gray-200 text-xs sm:text-sm pl-9 pr-4 py-2 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 placeholder-gray-500"
             />
           </div>
-          <Filter className="w-4 h-4 text-gray-500" />
           <select
             value={filterSeverity}
             onChange={(e) => setFilterSeverity(e.target.value)}
-            className="bg-gray-800 text-gray-300 text-sm px-3 py-2 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+            className="bg-gray-800/90 text-gray-200 text-xs sm:text-sm px-3 py-2 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 cursor-pointer"
           >
-            <option value="ALL">All Severities</option>
+            <option value="ALL">{t('common.all')} ({t('common.severity')})</option>
             {severities.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -128,9 +129,9 @@ export default function AlertsPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-gray-800 text-gray-300 text-sm px-3 py-2 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+            className="bg-gray-800/90 text-gray-200 text-xs sm:text-sm px-3 py-2 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 cursor-pointer"
           >
-            <option value="ALL">All Statuses</option>
+            <option value="ALL">{t('common.all')} ({t('common.status')})</option>
             {statuses.map((s) => (
               <option key={s} value={s}>{s.replace('_', ' ')}</option>
             ))}
@@ -143,12 +144,12 @@ export default function AlertsPage() {
                 setFilterStatus('ALL');
                 setSearch('');
               }}
-              className="text-blue-400 text-sm hover:underline"
+              className="text-blue-400 text-xs sm:text-sm hover:underline cursor-pointer"
             >
-              Clear filters
+              {t('common.cancel')}
             </button>
           )}
-          <span className="text-gray-600 text-sm ml-auto">{totalElements} results</span>
+          <span className="text-gray-500 text-xs sm:text-sm ml-auto hidden sm:inline">{totalElements} {t('common.actions').toLowerCase()}</span>
         </div>
 
         {/* Error message */}
