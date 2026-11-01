@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Shield, Zap, Search, ExternalLink, Info } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 
 interface MitreTechnique {
   id: string;
@@ -41,23 +42,32 @@ const techniques: MitreTechnique[] = [
 ];
 
 export default function MitreHeatmapPage() {
-  const [selectedTactic, setSelectedTactic] = useState<string>('ALL');
+  const [selectedTactic] = useState<string>('ALL');
 
   return (
     <AppLayout>
       <div className="p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">MITRE ATT&CK® Enterprise Heatmap & Coverage</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">MITRE ATT&CK® Enterprise Heatmap & Coverage</h1>
+              <DemoDataBadge tooltip="Simulated ATT&CK mapping matrix" />
+            </div>
+            <p className="text-gray-400 text-sm mt-0.5">
               Tactics, techniques, and procedures (TTPs) mapped to active Sigma rules and triggered alerts
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-1.5 rounded-md font-mono">
-              Detection Coverage: 78.5%
+              Detection Coverage: Demo Matrix
             </span>
           </div>
+        </div>
+
+        {/* Demo Banner */}
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-400 flex items-center justify-between">
+          <span>Demonstration matrix: TTP heatmap displays static techniques for ATT&CK visualization.</span>
+          <span className="font-mono text-[11px] opacity-80">v15 ENTERPRISE MATRIX</span>
         </div>
 
         {/* Legend */}

@@ -165,8 +165,11 @@ export default function IAMPage() {
         {/* IAM Users table */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-            <h2 className="text-gray-300 text-sm font-semibold">Audited Principals & Service Roles</h2>
-            <span className="text-gray-600 text-xs">{staticIamUsers.length} principals</span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-gray-300 text-sm font-semibold">Audited Principals & Service Roles</h2>
+              <DemoDataBadge tooltip="Simulated principal directory" />
+            </div>
+            <span className="text-gray-500 text-xs">{staticIamUsers.length} principals</span>
           </div>
           <table className="w-full">
             <thead>
@@ -334,17 +337,19 @@ export default function IAMPage() {
                         {finding.status === 'OPEN' && (
                           <button
                             onClick={() => updateFindingStatus(finding.id, 'ACKNOWLEDGED')}
-                            className="text-xs bg-purple-600/20 border border-purple-600/40 text-purple-400 px-3 py-1 rounded hover:bg-purple-600/30 transition-colors"
+                            disabled={updatingId === finding.id}
+                            className="text-xs bg-purple-600/20 border border-purple-600/40 text-purple-400 px-3 py-1 rounded hover:bg-purple-600/30 disabled:opacity-50 transition-colors"
                           >
-                            Acknowledge
+                            {updatingId === finding.id ? 'Updating...' : 'Acknowledge'}
                           </button>
                         )}
                         {finding.status !== 'REMEDIATED' && (
                           <button
                             onClick={() => updateFindingStatus(finding.id, 'REMEDIATED')}
-                            className="text-xs bg-green-600/20 border border-green-600/40 text-green-400 px-3 py-1 rounded hover:bg-green-600/30 transition-colors"
+                            disabled={updatingId === finding.id}
+                            className="text-xs bg-green-600/20 border border-green-600/40 text-green-400 px-3 py-1 rounded hover:bg-green-600/30 disabled:opacity-50 transition-colors"
                           >
-                            Mark Remediated
+                            {updatingId === finding.id ? 'Updating...' : 'Mark Remediated'}
                           </button>
                         )}
                       </div>

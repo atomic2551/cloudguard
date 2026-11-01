@@ -1,4 +1,4 @@
 cloudguard:
   cookie:
     secure: false
-  allowed-origins: "http://localhost:3000"
+  allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://10.36.238.206:3000"

@@ -145,7 +145,7 @@ export default function ReportsPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <h2 className="text-gray-200 text-sm font-semibold mb-4 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-orange-400" />
-              Alert Volume Trend
+              Alert Volume Trend · <span className="text-amber-500">Static demo series</span>
             </h2>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
@@ -174,7 +174,7 @@ export default function ReportsPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <h2 className="text-gray-200 text-sm font-semibold mb-4 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-blue-400" />
-              Severity Breakdown
+              Severity Breakdown · <span className="text-amber-500">Static demo series</span>
             </h2>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {staticSeverityDistribution.map((item) => (

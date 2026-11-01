@@ -10,6 +10,7 @@ import {
 import AppLayout from '@/components/layout/AppLayout';
 import SeverityBadge from '@/components/ui/SeverityBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 import { api, IncidentDto, IncidentStatus, IncidentTimelineDto, IncidentNoteDto, Severity } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -193,6 +194,7 @@ export default function IncidentDetailPage() {
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5 text-purple-400" />
                 <h3 className="text-white font-semibold text-base">SecLab AI Analyst Report (Claude Engine)</h3>
+                <DemoDataBadge tooltip="Simulated AI analysis report" />
                 <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-0.5 rounded-full font-mono">
                   Risk Score: {aiReport.riskScore}/100
                 </span>

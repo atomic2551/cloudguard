@@ -13,6 +13,8 @@ export function DemoDataBadge({
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-amber-500/10 text-amber-400 border border-amber-500/30 ${className}`}
       title={tooltip}
+      data-testid="demo-data-badge"
+      aria-label="Demo data indicator"
     >
       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
       DEMO DATA

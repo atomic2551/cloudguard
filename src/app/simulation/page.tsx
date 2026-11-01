@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Play, ShieldAlert, CheckCircle2, XCircle, Download, RefreshCw, Terminal, AlertTriangle } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/components/AuthProvider';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 
 interface AtomicTest {
   id: string;
@@ -129,8 +130,11 @@ ${tests.map((t) => `| ${t.id} | ${t.techniqueId} (${t.techniqueName}) | ${t.targ
       <div className="p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Attack Simulation & Detection Coverage Lab</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">Attack Simulation & Detection Coverage Lab</h1>
+              <DemoDataBadge tooltip="Simulated Atomic Red Team tests" />
+            </div>
+            <p className="text-gray-400 text-sm mt-0.5">
               Execute controlled Atomic Red Team techniques strictly against verified Scope Guard targets
             </p>
           </div>
@@ -143,6 +147,12 @@ ${tests.map((t) => `| ${t.id} | ${t.techniqueId} (${t.techniqueName}) | ${t.targ
               Export Report (Markdown)
             </button>
           </div>
+        </div>
+
+        {/* Demo banner */}
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-400 flex items-center justify-between">
+          <span>Demonstration telemetry: Atomic test vectors and execution results shown below are simulated for demonstration.</span>
+          <span className="font-mono text-[11px] opacity-80">SCOPE GUARD ACTIVE</span>
         </div>
 
         {/* Coverage cards */}

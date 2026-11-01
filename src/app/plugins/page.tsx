@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Cpu, Power, Activity, CheckCircle2, AlertCircle, RefreshCw, Layers } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import DemoDataBadge from '@/components/ui/DemoDataBadge';
 import { useAuth } from '@/components/AuthProvider';
 
 interface PluginState {
@@ -54,8 +55,11 @@ export default function PluginsPage() {
       <div className="p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Plugin Architecture & Sensor Controls</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-white">Plugin Architecture & Sensor Controls</h1>
+              <DemoDataBadge tooltip="Simulated defense plugin bus" />
+            </div>
+            <p className="text-gray-400 text-sm mt-0.5">
               10 unified defensive modules implementing start(), stop(), status(), emit(Event) via Redis Event Bus
             </p>
           </div>
@@ -65,6 +69,12 @@ export default function PluginsPage() {
               {plugins.filter((p) => p.status === 'RUNNING').length} Active / {plugins.length} Total
             </span>
           </div>
+        </div>
+
+        {/* Demo Banner */}
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-400 flex items-center justify-between">
+          <span>Demonstration modules: Platform plugins and Redis Event Bus sensor controls shown below are simulated.</span>
+          <span className="font-mono text-[11px] opacity-80">EVENT BUS DEMO</span>
         </div>
 
         {/* Plugin grid */}

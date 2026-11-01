@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Settings, Bell, Shield, Cloud, User, CheckCircle2, ToggleLeft, ToggleRight, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Bell, Shield, Cloud, User, CheckCircle2, ToggleLeft, ToggleRight, Save, AlertTriangle } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import { useAuth } from '@/components/AuthProvider';
 
 type Tab = 'profile' | 'security' | 'notifications' | 'detection' | 'cloud';
 
@@ -37,13 +38,26 @@ function ToggleRow({ label, description, value, onChange }: {
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [saved, setSaved] = useState(false);
+  const { user } = useAuth();
 
   const [profile, setProfile] = useState({
-    name: 'Sarah Chen',
-    email: 'sarah.chen@acmecorp.io',
+    name: '',
+    email: '',
     department: 'SOC Team',
-    phone: '+1 (555) 234-5678',
+    phone: '',
   });
+
+  // Populate profile from auth user on load
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.displayName || '',
+        email: user.email || '',
+        department: user.department || 'SOC Team',
+        phone: '',
+      });
+    }
+  }, [user]);
 
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -99,10 +113,12 @@ export default function SettingsPage() {
           </div>
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-md transition-colors"
+            disabled
+            className="flex items-center gap-2 bg-gray-700 text-gray-400 text-sm px-4 py-2 rounded-md cursor-not-allowed"
+            title="Settings persistence not implemented (demo)"
           >
-            {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            {saved ? 'Saved!' : 'Save Changes'}
+            <Save className="w-4 h-4" />
+            Save (demo — not persisted)
           </button>
         </div>
 
@@ -134,11 +150,13 @@ export default function SettingsPage() {
                 <h2 className="text-gray-200 text-sm font-semibold border-b border-gray-800 pb-3">Profile Settings</h2>
                 <div className="flex items-center gap-4 mb-5">
                   <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center">
-                    <span className="text-white text-xl font-bold">SC</span>
+                    <span className="text-white text-xl font-bold">
+                      {(user?.displayName || profile.name || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </span>
                   </div>
                   <div>
-                    <div className="text-white font-medium">{profile.name}</div>
-                    <div className="text-gray-500 text-sm">SOC Analyst · Active</div>
+                    <div className="text-white font-medium">{profile.name || user?.displayName || 'User'}</div>
+                    <div className="text-gray-500 text-sm">{user?.roles?.[0] || 'SOC Analyst'} · {user?.status || 'Active'}</div>
                     <button className="text-blue-400 text-xs mt-1 hover:underline">Change avatar</button>
                   </div>
                 </div>
@@ -161,9 +179,13 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 text-xs text-gray-500">
-                  <strong className="text-gray-400">Role:</strong> SOC Analyst ·{' '}
-                  <strong className="text-gray-400">Account Status:</strong> Active ·{' '}
+                  <strong className="text-gray-400">Role:</strong> {user?.roles?.[0] || 'SOC Analyst'} ·{' '}
+                  <strong className="text-gray-400">Account Status:</strong> {user?.status || 'Active'} ·{' '}
                   <strong className="text-gray-400">MFA:</strong> <span className="text-green-400">Enabled</span>
+                </div>
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-400 flex items-center gap-2 mt-2">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Settings persistence is not implemented. Changes on this page are in-memory only (demo).
                 </div>
               </div>
             )}

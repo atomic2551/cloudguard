@@ -207,14 +207,12 @@ export default function DashboardPage() {
         {/* Top metric cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <SecurityScoreRing score={securityScore} categories={summary?.categoryScores} />
-          <div className="grid grid-cols-2 col-span-1 lg:col-span-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 col-span-1 lg:col-span-4 gap-4">
             <MetricCard
               label="Critical Alerts"
               value={criticalAlerts ?? '—'}
               icon={AlertTriangle}
               iconColor="bg-red-500/20 text-red-400"
-              trend="up"
-              trendLabel="+2 today"
               href="/alerts"
             />
             <MetricCard
@@ -222,8 +220,6 @@ export default function DashboardPage() {
               value={highAlerts ?? '—'}
               icon={Bell}
               iconColor="bg-orange-500/20 text-orange-400"
-              trend="up"
-              trendLabel="+3 today"
               href="/alerts"
             />
             <MetricCard
@@ -231,8 +227,6 @@ export default function DashboardPage() {
               value={openIncidents ?? '—'}
               icon={Layers}
               iconColor="bg-purple-500/20 text-purple-400"
-              trend="up"
-              trendLabel="+1 today"
               href="/incidents"
             />
             <MetricCard
@@ -358,7 +352,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-gray-200 text-sm font-semibold">Incidents by Attack Category</h2>
-                <p className="text-gray-600 text-xs mt-0.5">Correlated security incidents</p>
+                <p className="text-gray-600 text-xs mt-0.5">Correlated security incidents · <span className="text-amber-500">Static demo series</span></p>
               </div>
               <Link href="/incidents" className="text-blue-400 text-xs hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
@@ -380,11 +374,8 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-gray-200 text-sm font-semibold">Security Posture Score History</h2>
-                <p className="text-gray-600 text-xs mt-0.5">Weekly compliance trend</p>
+                <p className="text-gray-600 text-xs mt-0.5">Weekly compliance trend · <span className="text-amber-500">Static demo series</span></p>
               </div>
-              <span className="text-green-400 text-xs font-medium flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +6 pts
-              </span>
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={staticSecurityScoreHistory} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
